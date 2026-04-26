@@ -1,0 +1,1502 @@
+// ==================== SESSION MANAGEMENT ====================
+let currentUser = null;
+
+// Check session on page load
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = sessionStorage.getItem('user');
+  const token = sessionStorage.getItem('token');
+
+  if (!user || !token) {
+    // Redirect to login if not authenticated
+    window.location.href = 'login.html';
+    return;
+  }
+
+  currentUser = JSON.parse(user);
+  
+  // Display user info
+  document.getElementById('user-name').textContent = currentUser.name || currentUser.email;
+  document.getElementById('user-role').textContent = currentUser.role;
+
+  // Show/hide admin panel based on role
+  if (currentUser.role === 'admin') {
+    document.getElementById('admin-nav-btn').classList.remove('hidden');
+  }
+
+  // Initialize app
+  initializeApp();
+});
+
+// Logout functionality
+document.getElementById('logout-btn').addEventListener('click', () => {
+  sessionStorage.removeItem('user');
+  sessionStorage.removeItem('token');
+  window.location.href = 'login.html';
+});
+
+// ==================== COMPREHENSIVE QUESTION BANK ====================
+const questionBank = {
+  'data-structures': [
+    {
+      question: 'Which data structure uses LIFO ordering?',
+      options: ['Queue', 'Stack', 'Heap', 'Graph'],
+      answer: 'Stack',
+      difficulty: 'Easy',
+      explanation: 'A stack follows Last-In, First-Out behavior, so the most recently added item is removed first.',
+    },
+    {
+      question: 'What is the time complexity of accessing an element by index in an array?',
+      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
+      answer: 'O(1)',
+      difficulty: 'Easy',
+      explanation: 'Arrays provide constant-time indexed access because the element address can be computed directly.',
+    },
+    {
+      question: 'Which data structure is best suited for breadth-first search?',
+      options: ['Stack', 'Queue', 'Hash Table', 'Binary Search Tree'],
+      answer: 'Queue',
+      difficulty: 'Medium',
+      explanation: 'Breadth-first search explores nodes level by level, and a queue preserves the order of nodes to visit next.',
+    },
+    {
+      question: 'What is the worst-case time complexity of inserting an element in a binary search tree?',
+      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n^2)'],
+      answer: 'O(n)',
+      difficulty: 'Medium',
+      explanation: 'If the BST becomes unbalanced (like a linked list), insertion can take O(n) time in the worst case.',
+    },
+    {
+      question: 'Which of the following is NOT a linear data structure?',
+      options: ['Array', 'Linked List', 'Tree', 'Queue'],
+      answer: 'Tree',
+      difficulty: 'Easy',
+      explanation: 'Trees are hierarchical/non-linear data structures, while arrays, linked lists, and queues are linear.',
+    },
+    {
+      question: 'What is the space complexity of a recursive function that calculates factorial?',
+      options: ['O(1)', 'O(n)', 'O(log n)', 'O(n^2)'],
+      answer: 'O(n)',
+      difficulty: 'Medium',
+      explanation: 'Each recursive call is added to the call stack, resulting in O(n) space complexity for a depth-n recursion.',
+    },
+    {
+      question: 'In a max heap, what is the relationship between parent and child nodes?',
+      options: ['Parent >= Children', 'Parent <= Children', 'Parent = Children', 'No specific order'],
+      answer: 'Parent >= Children',
+      difficulty: 'Medium',
+      explanation: 'In a max heap, each parent node is greater than or equal to its children.',
+    },
+    {
+      question: 'What is the minimum number of comparisons needed to find both minimum and maximum in an array of n elements?',
+      options: ['2n - 2', '1.5n - 2', '3n/2 - 2', 'n - 1'],
+      answer: '3n/2 - 2',
+      difficulty: 'Hard',
+      explanation: 'The optimal algorithm compares elements in pairs and tracks min/max, requiring 3n/2 - 2 comparisons.',
+    },
+    {
+      question: 'Which data structure would you use to implement a LRU (Least Recently Used) cache?',
+      options: ['Array', 'Hash Map + Doubly Linked List', 'Binary Search Tree', 'Queue'],
+      answer: 'Hash Map + Doubly Linked List',
+      difficulty: 'Hard',
+      explanation: 'Hash map provides O(1) access, while doubly linked list maintains the order of access for efficient eviction.',
+    },
+    {
+      question: 'What is the time complexity of searching in a balanced binary search tree?',
+      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
+      answer: 'O(log n)',
+      difficulty: 'Medium',
+      explanation: 'A balanced BST eliminates half of the remaining elements with each comparison, giving O(log n) time.',
+    },
+    {
+      question: 'In a hash table with chaining, what is the average time complexity of insertion?',
+      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n^2)'],
+      answer: 'O(1)',
+      difficulty: 'Medium',
+      explanation: 'With a good hash function and reasonable load factor, insertion in a hash table is O(1) on average.',
+    },
+    {
+      question: 'What is the main disadvantage of using an array over a linked list?',
+      options: ['Slower access time', 'Larger memory overhead', 'Costly insertion/deletion', 'Fixed size limitation'],
+      answer: 'Costly insertion/deletion',
+      difficulty: 'Medium',
+      explanation: 'Arrays require shifting elements during insertion/deletion, while linked lists only need pointer updates.',
+    },
+    {
+      question: 'Which traversal of a binary search tree yields elements in sorted order?',
+      options: ['Pre-order', 'In-order', 'Post-order', 'Level-order'],
+      answer: 'In-order',
+      difficulty: 'Medium',
+      explanation: 'In-order traversal (Left-Root-Right) of a BST produces elements in ascending sorted order.',
+    },
+    {
+      question: 'What is the time complexity of merge sort in all cases?',
+      options: ['O(n)', 'O(n log n)', 'O(n^2)', 'O(log n)'],
+      answer: 'O(n log n)',
+      difficulty: 'Medium',
+      explanation: 'Merge sort always divides the array in half and merges, resulting in O(n log n) time complexity.',
+    },
+    {
+      question: 'In a graph with V vertices and E edges, what is the space complexity of adjacency list representation?',
+      options: ['O(V)', 'O(E)', 'O(V + E)', 'O(V * E)'],
+      answer: 'O(V + E)',
+      difficulty: 'Hard',
+      explanation: 'Adjacency list stores V lists (one for each vertex) with a total of 2E entries for undirected graphs.',
+    },
+  ],
+  algorithms: [
+    {
+      question: 'What is the average time complexity of quicksort?',
+      options: ['O(n)', 'O(n log n)', 'O(n^2)', 'O(log n)'],
+      answer: 'O(n log n)',
+      difficulty: 'Medium',
+      explanation: 'Quicksort typically achieves O(n log n) average time complexity by dividing and conquering.',
+    },
+    {
+      question: 'Which algorithm is best suited for finding the shortest path in a weighted graph?',
+      options: ['BFS', 'DFS', "Dijkstra's algorithm", 'Bubble sort'],
+      answer: "Dijkstra's algorithm",
+      difficulty: 'Medium',
+      explanation: "Dijkstra's algorithm efficiently finds the shortest path from a source to all other vertices.",
+    },
+    {
+      question: 'What is the time complexity of binary search?',
+      options: ['O(n)', 'O(log n)', 'O(n log n)', 'O(1)'],
+      answer: 'O(log n)',
+      difficulty: 'Easy',
+      explanation: 'Binary search eliminates half of the remaining elements with each comparison, giving O(log n) time.',
+    },
+    {
+      question: 'Which sorting algorithm is most efficient for nearly sorted arrays?',
+      options: ['Bubble sort', 'Insertion sort', 'Merge sort', 'Quicksort'],
+      answer: 'Insertion sort',
+      difficulty: 'Medium',
+      explanation: 'Insertion sort performs best on nearly sorted arrays as it has minimal shifts required.',
+    },
+    {
+      question: 'What is the space complexity of the recursive implementation of binary search?',
+      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n^2)'],
+      answer: 'O(log n)',
+      difficulty: 'Medium',
+      explanation: 'Recursion adds O(log n) space due to the call stack depth in binary search.',
+    },
+    {
+      question: 'Which approach is used in the knapsack problem?',
+      options: ['Greedy', 'Divide and conquer', 'Dynamic programming', 'Brute force'],
+      answer: 'Dynamic programming',
+      difficulty: 'Hard',
+      explanation: 'Dynamic programming efficiently solves the knapsack problem by storing subproblem solutions.',
+    },
+    {
+      question: 'What is the longest common subsequence (LCS) problem solved using?',
+      options: ['Greedy', 'Dynamic programming', 'Recursion', 'Iteration'],
+      answer: 'Dynamic programming',
+      difficulty: 'Hard',
+      explanation: 'LCS uses dynamic programming to build a table of optimal subproblem solutions.',
+    },
+    {
+      question: 'In the A* algorithm, what does the heuristic function estimate?',
+      options: ['Distance from start', 'Distance to goal', 'Total cost', 'Time taken'],
+      answer: 'Distance to goal',
+      difficulty: 'Hard',
+      explanation: 'A* uses a heuristic function to estimate the cost from the current node to the goal.',
+    },
+    {
+      question: 'What is the worst-case time complexity of heapsort?',
+      options: ['O(n)', 'O(n log n)', 'O(n^2)', 'O(log n)'],
+      answer: 'O(n log n)',
+      difficulty: 'Medium',
+      explanation: 'Heapsort guarantees O(n log n) time complexity in all cases, including the worst case.',
+    },
+    {
+      question: 'Which algorithm uses the divide-and-conquer approach?',
+      options: ['Insertion sort', 'Merge sort', 'Selection sort', 'Bubble sort'],
+      answer: 'Merge sort',
+      difficulty: 'Easy',
+      explanation: 'Merge sort divides the array into halves, recursively sorts them, and then merges.',
+    },
+    {
+      question: 'What is the minimum spanning tree used for?',
+      options: ['Finding cycles', 'Shortest paths', 'Connecting all vertices with minimum weight', 'Topological sorting'],
+      answer: 'Connecting all vertices with minimum weight',
+      difficulty: 'Medium',
+      explanation: 'MST connects all vertices with the minimum possible total edge weight.',
+    },
+    {
+      question: 'In topological sorting, what must the graph be?',
+      options: ['Cyclic', 'Acyclic', 'Connected', 'Weighted'],
+      answer: 'Acyclic',
+      difficulty: 'Medium',
+      explanation: 'Topological sorting requires a directed acyclic graph (DAG) to produce a valid ordering.',
+    },
+    {
+      question: 'What is the time complexity of the Floyd-Warshall algorithm?',
+      options: ['O(V^2)', 'O(V^3)', 'O(E log V)', 'O(V + E)'],
+      answer: 'O(V^3)',
+      difficulty: 'Hard',
+      explanation: 'Floyd-Warshall uses three nested loops, resulting in O(V^3) time complexity.',
+    },
+    {
+      question: 'Which algorithm is used for finding strongly connected components?',
+      options: ['DFS', "Tarjan's algorithm", "Dijkstra's", 'BFS'],
+      answer: "Tarjan's algorithm",
+      difficulty: 'Hard',
+      explanation: "Tarjan's algorithm efficiently finds strongly connected components using DFS in O(V + E) time.",
+    },
+    {
+      question: 'What is the recurrence relation for the time complexity of merge sort?',
+      options: ['T(n) = T(n-1) + n', 'T(n) = 2T(n/2) + n', 'T(n) = T(n/2) + 1', 'T(n) = T(n-1) + 1'],
+      answer: 'T(n) = 2T(n/2) + n',
+      difficulty: 'Hard',
+      explanation: 'Merge sort divides into two halves and merges, giving the recurrence T(n) = 2T(n/2) + n.',
+    },
+  ],
+  'system-design': [
+    {
+      question: 'What is the primary purpose of load balancing?',
+      options: ['Encrypt data', 'Distribute traffic', 'Store data', 'Compile code'],
+      answer: 'Distribute traffic',
+      difficulty: 'Easy',
+      explanation: 'Load balancing distributes incoming requests across multiple servers to improve performance.',
+    },
+    {
+      question: 'Which caching strategy is used in most modern web applications?',
+      options: ['FIFO', 'LRU', 'LIFO', 'Random'],
+      answer: 'LRU',
+      difficulty: 'Medium',
+      explanation: 'LRU (Least Recently Used) caching removes the least recently accessed items when the cache is full.',
+    },
+    {
+      question: 'What is the CAP theorem?',
+      options: ['CPU, API, Path', 'Consistency, Availability, Partition tolerance', 'Cache, API, Protocol', 'CPU, Availability, Performance'],
+      answer: 'Consistency, Availability, Partition tolerance',
+      difficulty: 'Hard',
+      explanation: 'The CAP theorem states distributed systems can guarantee at most two of three properties.',
+    },
+    {
+      question: 'Which database is suitable for fast read operations with less write frequency?',
+      options: ['Write-optimized', 'Read-optimized', 'Balanced', 'Graph DB'],
+      answer: 'Read-optimized',
+      difficulty: 'Medium',
+      explanation: 'Read-optimized databases use indexing and caching to speed up read operations.',
+    },
+    {
+      question: 'What is horizontal scaling?',
+      options: ['Adding more power to existing servers', 'Adding more servers', 'Upgrading hardware', 'Reducing load'],
+      answer: 'Adding more servers',
+      difficulty: 'Easy',
+      explanation: 'Horizontal scaling adds more servers to distribute the load across multiple machines.',
+    },
+    {
+      question: 'Which pattern is used for handling eventual consistency?',
+      options: ['ACID', 'BASE', 'SOLID', 'DRY'],
+      answer: 'BASE',
+      difficulty: 'Hard',
+      explanation: 'BASE (Basically Available, Soft state, Eventually consistent) pattern handles eventual consistency.',
+    },
+    {
+      question: 'What is a message queue used for?',
+      options: ['Storing data', 'Asynchronous communication', 'Authentication', 'Encryption'],
+      answer: 'Asynchronous communication',
+      difficulty: 'Medium',
+      explanation: 'Message queues enable asynchronous communication between different parts of a system.',
+    },
+    {
+      question: 'Which technique reduces database load by serving frequently accessed data from memory?',
+      options: ['Indexing', 'Sharding', 'Caching', 'Replication'],
+      answer: 'Caching',
+      difficulty: 'Easy',
+      explanation: 'Caching stores frequently accessed data in fast memory to reduce database queries.',
+    },
+  ],
+  'machine-learning': [
+    {
+      question: 'What is the primary goal of supervised learning?',
+      options: ['Clustering', 'Prediction', 'Dimensionality reduction', 'Feature extraction'],
+      answer: 'Prediction',
+      difficulty: 'Easy',
+      explanation: 'Supervised learning uses labeled data to train models for making predictions on new data.',
+    },
+    {
+      question: 'Which algorithm is commonly used for binary classification?',
+      options: ['K-means', 'Logistic regression', 'PCA', 'Gaussian Mixture Model'],
+      answer: 'Logistic regression',
+      difficulty: 'Medium',
+      explanation: 'Logistic regression is a popular algorithm for binary classification problems.',
+    },
+    {
+      question: 'What does overfitting mean?',
+      options: ['Model is too simple', 'Model memorizes training data', 'Model has high bias', 'Model is underfitted'],
+      answer: 'Model memorizes training data',
+      difficulty: 'Medium',
+      explanation: 'Overfitting occurs when a model learns training data too well, including noise, and performs poorly on new data.',
+    },
+    {
+      question: 'Which technique is used to prevent overfitting?',
+      options: ['Increasing model complexity', 'Regularization', 'More training', 'Fewer features'],
+      answer: 'Regularization',
+      difficulty: 'Medium',
+      explanation: 'Regularization adds penalties to the loss function to prevent overfitting.',
+    },
+    {
+      question: 'What is cross-validation used for?',
+      options: ['Feature scaling', 'Model evaluation', 'Data augmentation', 'Hyperparameter tuning'],
+      answer: 'Model evaluation',
+      difficulty: 'Medium',
+      explanation: 'Cross-validation evaluates model performance by splitting data into multiple folds.',
+    },
+  ],
+  databases: [
+    {
+      question: 'What is ACID in databases?',
+      options: ['Atomicity, Consistency, Isolation, Durability', 'Analysis, Classification, Index, Data', 'API, Cache, Interface, Database', 'Attribute, Class, Instance, Data'],
+      answer: 'Atomicity, Consistency, Isolation, Durability',
+      difficulty: 'Easy',
+      explanation: 'ACID ensures reliable database transactions with four key properties.',
+    },
+    {
+      question: 'Which key uniquely identifies a record in a table?',
+      options: ['Foreign key', 'Primary key', 'Composite key', 'Candidate key'],
+      answer: 'Primary key',
+      difficulty: 'Easy',
+      explanation: 'A primary key uniquely identifies each record in a table.',
+    },
+    {
+      question: 'What is the purpose of an index in a database?',
+      options: ['Store data', 'Improve query performance', 'Backup data', 'Encrypt data'],
+      answer: 'Improve query performance',
+      difficulty: 'Medium',
+      explanation: 'Indexes speed up data retrieval by creating faster lookup structures.',
+    },
+    {
+      question: 'What is a foreign key?',
+      options: ['A unique identifier', 'A reference to primary key in another table', 'A backup key', 'A composite key'],
+      answer: 'A reference to primary key in another table',
+      difficulty: 'Easy',
+      explanation: 'A foreign key establishes a relationship between tables by referencing a primary key.',
+    },
+    {
+      question: 'What is a transaction in a database?',
+      options: ['A single query', 'A set of operations treated as a unit', 'A backup', 'An index'],
+      answer: 'A set of operations treated as a unit',
+      difficulty: 'Medium',
+      explanation: 'A transaction is a sequence of operations that must all succeed or all fail together.',
+    },
+  ],
+};
+
+// ==================== SESSION MANAGER ====================
+class SessionManager {
+  constructor() {
+    this.key = 'scheduledTests';
+  }
+
+  scheduleTest(testData) {
+    const tests = this.getScheduledTests();
+    const newTest = {
+      id: Date.now().toString(),
+      ...testData,
+    };
+    tests.push(newTest);
+    localStorage.setItem(this.key, JSON.stringify(tests));
+    return newTest;
+  }
+
+  getScheduledTests() {
+    const tests = localStorage.getItem(this.key);
+    if (!tests) return [];
+    return JSON.parse(tests).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  deleteScheduledTest(testId) {
+    const tests = this.getScheduledTests();
+    const updated = tests.filter(t => t.id !== testId);
+    localStorage.setItem(this.key, JSON.stringify(updated));
+  }
+}
+
+const sessionManager = new SessionManager();
+
+// ==================== GLOBAL STATE ====================
+let testInProgress = false;
+let tabSwitches = 0;
+const maxTabSwitches = 3;
+let testState = {
+  currentQuestion: 0,
+  selectedAnswers: [],
+  subject: '',
+  numQuestions: 0,
+  startTime: null,
+  duration: 0,
+};
+
+// ==================== INITIALIZATION ====================
+function initializeApp() {
+  setupEventListeners();
+  displayAssignmentStatus();
+  if (currentUser.role === 'admin') {
+    displayAdminTests();
+  }
+  loadStats();
+}
+
+// ==================== EVENT LISTENERS ====================
+function setupEventListeners() {
+  // Navigation
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', handleNavigation);
+  });
+
+  // Mock test
+  document.getElementById('start-test').addEventListener('click', startMockTest);
+  document.getElementById('submit-test').addEventListener('click', submitTest);
+  document.getElementById('reset-session').addEventListener('click', resetSession);
+  document.getElementById('load-more').addEventListener('click', loadMoreQuestions);
+
+  // Admin
+  if (currentUser.role === 'admin') {
+    document.getElementById('admin-schedule-form').addEventListener('submit', handleAdminScheduleSubmit);
+  }
+}
+
+// ==================== NAVIGATION ====================
+function handleNavigation(e) {
+  const view = e.target.getAttribute('data-view');
+  
+  // Check if user is trying to access admin panel
+  if (view === 'admin' && currentUser.role !== 'admin') {
+    alert('Admin access required');
+    return;
+  }
+
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(view).classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+  e.target.classList.add('active');
+}
+
+// ==================== MOCK TEST FUNCTIONALITY ====================
+function startMockTest() {
+  const subject = document.getElementById('subject-select').value;
+  const numQuestions = parseInt(document.getElementById('num-questions').value);
+
+  testState.subject = subject;
+  testState.numQuestions = numQuestions;
+  testState.currentQuestion = 0;
+  testState.selectedAnswers = new Array(numQuestions).fill(null);
+  testState.startTime = Date.now();
+  testState.duration = numQuestions * 2 * 60; // 2 minutes per question
+
+  testInProgress = true;
+  enableTestSecurity();
+
+  document.getElementById('test-container').classList.remove('hidden');
+  document.getElementById('test-form').innerHTML = '';
+  document.getElementById('test-result').classList.add('hidden');
+
+  displayQuestion();
+  startTimer();
+}
+
+function displayQuestion() {
+  const questions = questionBank[testState.subject];
+  const question = questions[testState.currentQuestion];
+
+  const questionHTML = `
+    <div class="question-card">
+      <div class="question-meta">
+        <span>Question ${testState.currentQuestion + 1} of ${testState.numQuestions}</span>
+        <span class="difficulty-${question.difficulty.toLowerCase()}">${question.difficulty}</span>
+      </div>
+      <p>${question.question}</p>
+      <div class="answer-group">
+        ${question.options
+          .map(
+            (option, idx) =>
+              `<label>
+            <input type="radio" name="answer" value="${option}" ${
+                testState.selectedAnswers[testState.currentQuestion] === option ? 'checked' : ''
+              } />
+            <span>${option}</span>
+          </label>`
+          )
+          .join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('test-form').innerHTML = questionHTML;
+  updateProgress();
+
+  // Save answer on change
+  document.querySelectorAll('input[name="answer"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      testState.selectedAnswers[testState.currentQuestion] = e.target.value;
+    });
+  });
+}
+
+function updateProgress() {
+  const filled = ((testState.currentQuestion + 1) / testState.numQuestions) * 100;
+  document.getElementById('progress-fill').style.width = filled + '%';
+  document.getElementById('progress-info').textContent = `Question ${testState.currentQuestion + 1} of ${testState.numQuestions}`;
+}
+
+function startTimer() {
+  const timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - testState.startTime) / 1000);
+    const remaining = testState.duration - elapsed;
+
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      submitTest();
+      return;
+    }
+
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    document.getElementById('timer').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }, 1000);
+}
+
+function submitTest() {
+  testInProgress = false;
+  disableTestSecurity();
+
+  const questions = questionBank[testState.subject];
+  let correctCount = 0;
+
+  const resultHTML = testState.selectedAnswers
+    .map((answer, idx) => {
+      const question = questions[idx];
+      const isCorrect = answer === question.answer;
+      if (isCorrect) correctCount++;
+
+      return `
+      <div class="question-card ${isCorrect ? 'correct' : 'incorrect'}">
+        <div class="question-meta">
+          <span>Question ${idx + 1}</span>
+          <span>${isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>
+        </div>
+        <p>${question.question}</p>
+        <p><strong>Your answer:</strong> ${answer || 'Not answered'}</p>
+        <p><strong>Correct answer:</strong> ${question.answer}</p>
+        <div class="explanation">
+          <p><strong>Explanation:</strong> ${question.explanation}</p>
+        </div>
+      </div>
+    `;
+    })
+    .join('');
+
+  const score = ((correctCount / testState.numQuestions) * 100).toFixed(2);
+  const testResultHTML = `
+    <div class="result-score">${score}%</div>
+    <div class="result-details">
+      <div class="result-item">
+        <div class="result-item-label">Correct</div>
+        <div class="result-item-value">${correctCount}/${testState.numQuestions}</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Accuracy</div>
+        <div class="result-item-value">${score}%</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Time Taken</div>
+        <div class="result-item-value">${Math.floor((Date.now() - testState.startTime) / 1000)}s</div>
+      </div>
+    </div>
+    <h3>Detailed Results</h3>
+    ${resultHTML}
+  `;
+
+  document.getElementById('test-result').innerHTML = testResultHTML;
+  document.getElementById('test-result').classList.remove('hidden');
+  document.getElementById('submit-test').classList.add('hidden');
+  document.getElementById('load-more').classList.remove('hidden');
+
+  // Save stats
+  saveStats(score, testState.numQuestions);
+  updateStats();
+}
+
+function resetSession() {
+  testInProgress = false;
+  disableTestSecurity();
+  testState = {
+    currentQuestion: 0,
+    selectedAnswers: [],
+    subject: '',
+    numQuestions: 0,
+    startTime: null,
+    duration: 0,
+  };
+
+  document.getElementById('test-container').classList.add('hidden');
+  document.getElementById('test-form').innerHTML = '';
+  document.getElementById('test-result').classList.add('hidden');
+  document.getElementById('submit-test').classList.remove('hidden');
+  document.getElementById('load-more').classList.add('hidden');
+}
+
+function loadMoreQuestions() {
+  resetSession();
+  document.getElementById('subject-select').value = testState.subject;
+  document.getElementById('num-questions').value = testState.numQuestions;
+}
+
+// ==================== SECURITY FUNCTIONS ====================
+function enableTestSecurity() {
+  document.addEventListener('copy', preventAction);
+  document.addEventListener('cut', preventAction);
+  document.addEventListener('paste', preventAction);
+  document.addEventListener('contextmenu', preventAction);
+  document.addEventListener('keydown', preventCopyPasteKeys);
+  document.addEventListener('keydown', preventDevTools);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  if (document.body.requestFullscreen) {
+    document.body.requestFullscreen().catch(() => {});
+  }
+}
+
+function disableTestSecurity() {
+  document.removeEventListener('copy', preventAction);
+  document.removeEventListener('cut', preventAction);
+  document.removeEventListener('paste', preventAction);
+  document.removeEventListener('contextmenu', preventAction);
+  document.removeEventListener('keydown', preventCopyPasteKeys);
+  document.removeEventListener('keydown', preventDevTools);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function preventAction(e) {
+  if (testInProgress) {
+    e.preventDefault();
+  }
+}
+
+function preventCopyPasteKeys(e) {
+  if (!testInProgress) return;
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'a')) {
+    e.preventDefault();
+  }
+}
+
+function preventDevTools(e) {
+  if (!testInProgress) return;
+  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
+    e.preventDefault();
+  }
+}
+
+function handleVisibilityChange() {
+  if (!testInProgress) return;
+
+  if (document.hidden) {
+    tabSwitches++;
+    if (tabSwitches >= maxTabSwitches) {
+      terminateTest();
+    }
+  }
+}
+
+function terminateTest() {
+  testInProgress = false;
+  disableTestSecurity();
+
+  document.getElementById('warning-message').textContent = `Your test has been terminated. You switched tabs ${tabSwitches} times.`;
+  document.getElementById('security-warning').classList.remove('hidden');
+
+  setTimeout(() => {
+    document.getElementById('security-warning').classList.add('hidden');
+    resetSession();
+  }, 5000);
+}
+
+// ==================== STATS MANAGEMENT ====================
+function saveStats(score, numQuestions) {
+  let stats = JSON.parse(localStorage.getItem('testStats')) || {
+    totalTests: 0,
+    totalScore: 0,
+    totalQuestions: 0,
+  };
+
+  stats.totalTests++;
+  stats.totalScore += parseFloat(score);
+  stats.totalQuestions += numQuestions;
+
+  localStorage.setItem('testStats', JSON.stringify(stats));
+}
+
+function loadStats() {
+  const stats = JSON.parse(localStorage.getItem('testStats')) || {
+    totalTests: 0,
+    totalScore: 0,
+    totalQuestions: 0,
+  };
+
+  updateStats();
+}
+
+function updateStats() {
+  const stats = JSON.parse(localStorage.getItem('testStats')) || {
+    totalTests: 0,
+    totalScore: 0,
+    totalQuestions: 0,
+  };
+
+  document.getElementById('total-attempted').textContent = stats.totalTests;
+  document.getElementById('avg-score').textContent = stats.totalTests > 0 ? (stats.totalScore / stats.totalTests).toFixed(1) + '%' : '0%';
+  document.getElementById('questions-used').textContent = stats.totalQuestions;
+
+  let totalQuestions = 0;
+  Object.values(questionBank).forEach(subject => {
+    totalQuestions += subject.length;
+  });
+  document.getElementById('unique-questions').textContent = totalQuestions;
+}
+
+// ==================== SCHEDULED TEST FUNCTIONS ====================
+function displayAssignmentStatus() {
+  const tests = sessionManager.getScheduledTests();
+  let html = '';
+
+  if (tests.length === 0) {
+    html = '<p>No test assigned yet.</p>';
+  } else {
+    const now = new Date();
+    let foundActive = false;
+
+    for (const test of tests) {
+      const testDateTime = new Date(test.date + 'T' + test.time);
+      const testEndTime = new Date(testDateTime.getTime() + test.duration * 60000);
+
+      let status = '';
+      if (testDateTime <= now && now <= testEndTime) {
+        status = 'active';
+        foundActive = true;
+      } else if (testDateTime > now) {
+        status = 'upcoming';
+      } else {
+        status = 'past';
+      }
+
+      const statusBadgeColor = status === 'active' ? '#22c55e' : status === 'upcoming' ? '#f59e0b' : '#6b7280';
+      const statusBadge = `<span style="color: ${statusBadgeColor}; font-weight: 600;">● ${status.toUpperCase()}</span>`;
+
+      html += `
+        <div class="scheduled-test-card ${status}">
+          <div class="test-info">
+            <h3>${test.subject}</h3>
+            <p>📅 ${test.date} at ${test.time}</p>
+            <p>⏱️ ${test.duration} minutes • ${test.numQuestions} questions</p>
+            <p>${statusBadge}</p>
+          </div>
+          ${status === 'active' ? `<button class="action-button" onclick="startScheduledTest('${test.id}')">Start Test</button>` : ''}
+        </div>
+      `;
+    }
+
+    if (!foundActive) {
+      html += '<p style="margin-top: 16px; color: #6b7280;">No active test at the moment.</p>';
+    }
+  }
+
+  document.getElementById('schedule-status').innerHTML = html;
+}
+
+function startScheduledTest(testId) {
+  const tests = sessionManager.getScheduledTests();
+  const test = tests.find(t => t.id === testId);
+
+  if (!test) return;
+
+  testState.subject = test.subject;
+  testState.numQuestions = test.numQuestions;
+  testState.currentQuestion = 0;
+  testState.selectedAnswers = new Array(test.numQuestions).fill(null);
+  testState.startTime = Date.now();
+  testState.duration = test.duration * 60;
+
+  testInProgress = true;
+  enableTestSecurity();
+
+  // Navigate to mock test view
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('mock-test').classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+  document.querySelector('[data-view="mock-test"]').classList.add('active');
+
+  document.getElementById('test-container').classList.remove('hidden');
+  document.getElementById('test-form').innerHTML = '';
+  document.getElementById('test-result').classList.add('hidden');
+
+  displayQuestion();
+  startTimer();
+}
+
+// ==================== ADMIN FUNCTIONS ====================
+function handleAdminScheduleSubmit(e) {
+  e.preventDefault();
+
+  const testData = {
+    subject: document.getElementById('admin-subject').value,
+    date: document.getElementById('admin-date').value,
+    time: document.getElementById('admin-time').value,
+    duration: parseInt(document.getElementById('admin-duration').value),
+    numQuestions: parseInt(document.getElementById('admin-questions').value),
+  };
+
+  if (!testData.subject || !testData.date || !testData.time) {
+    alert('Please fill in all fields');
+    return;
+  }
+
+  sessionManager.scheduleTest(testData);
+  e.target.reset();
+  displayAdminTests();
+  displayAssignmentStatus();
+}
+
+function displayAdminTests() {
+  const tests = sessionManager.getScheduledTests();
+  const testsHtml = tests
+    .map(test => {
+      const testDateTime = new Date(test.date + 'T' + test.time);
+      const now = new Date();
+      const testEndTime = new Date(testDateTime.getTime() + test.duration * 60000);
+
+      let status = '';
+      if (testDateTime <= now && now <= testEndTime) {
+        status = 'active';
+      } else if (testDateTime > now) {
+        status = 'upcoming';
+      } else {
+        status = 'past';
+      }
+
+      return `
+        <div class="admin-test-card ${status}">
+          <div class="test-info">
+            <h3>${test.subject}</h3>
+            <p>📅 ${test.date} at ${test.time}</p>
+            <p>⏱️ ${test.duration} minutes • ${test.numQuestions} questions</p>
+          </div>
+          <div class="test-actions">
+            <button class="action-button secondary" onclick="deleteAdminTest('${test.id}')">Delete</button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  document.getElementById('admin-tests-list').innerHTML = testsHtml || '<p>No tests assigned yet.</p>';
+}
+
+function deleteAdminTest(testId) {
+  if (confirm('Are you sure you want to delete this test?')) {
+    sessionManager.deleteScheduledTest(testId);
+    displayAdminTests();
+    displayAssignmentStatus();
+  }
+// ==================== DOM ELEMENTS ====
+const navButtons = document.querySelectorAll('.nav-item');
+const views = document.querySelectorAll('.view');
+const aiButton = document.getElementById('start-ai');
+const subjectSelect = document.getElementById('subject-select');
+const numQuestionsSelect = document.getElementById('num-questions');
+const startTestButton = document.getElementById('start-test');
+const resetSessionButton = document.getElementById('reset-session');
+const testContainer = document.getElementById('test-container');
+const testForm = document.getElementById('test-form');
+const testResult = document.getElementById('test-result');
+const testTitle = document.getElementById('test-title');
+const testDescription = document.getElementById('test-description');
+const progressFill = document.getElementById('progress-fill');
+const progressInfo = document.getElementById('progress-info');
+const timerDisplay = document.getElementById('timer');
+const submitTestButton = document.getElementById('submit-test');
+const loadMoreButton = document.getElementById('load-more');
+
+// Schedule test elements
+const scheduleStatus = document.getElementById('schedule-status');
+const scheduleForm = document.getElementById('schedule-form');
+const scheduleSubject = document.getElementById('schedule-subject');
+const scheduleDate = document.getElementById('schedule-date');
+const scheduleTime = document.getElementById('schedule-time');
+const scheduleDuration = document.getElementById('schedule-duration');
+const scheduleQuestions = document.getElementById('schedule-questions');
+const scheduledTestsList = document.getElementById('scheduled-tests-list');
+
+// Admin elements
+const adminLoginModal = document.getElementById('admin-login-modal');
+const adminLoginForm = document.getElementById('admin-login-form');
+const adminEmail = document.getElementById('admin-email');
+const adminPassword = document.getElementById('admin-password');
+const adminNavBtn = document.getElementById('admin-nav-btn');
+const adminScheduleForm = document.getElementById('admin-schedule-form');
+const adminSubject = document.getElementById('admin-subject');
+const adminDate = document.getElementById('admin-date');
+const adminTime = document.getElementById('admin-time');
+const adminDuration = document.getElementById('admin-duration');
+const adminQuestions = document.getElementById('admin-questions');
+const adminTestsList = document.getElementById('admin-tests-list');
+const adminLogoutBtn = document.getElementById('admin-logout-btn');
+
+// ==================== STATE ====================
+let sessionManager = new SessionManager();
+let activeQuestions = [];
+let startTime = 0;
+let timerInterval = null;
+let testInProgress = false;
+let tabSwitches = 0;
+let maxTabSwitches = 3; // Allow up to 3 tab switches before warning
+let isAdminLoggedIn = false;
+const ADMIN_CREDENTIALS = { email: 'admin@test.com', password: 'admin123' };
+
+// ==================== UTILITY FUNCTIONS ===================="}
+function showView(viewId) {
+  views.forEach(view => {
+    view.classList.toggle('active', view.id === viewId);
+  });
+
+  navButtons.forEach(button => {
+    button.classList.toggle('active', button.dataset.view === viewId);
+  });
+}
+
+function getUnusedQuestions(subject, count) {
+  const usedIds = sessionManager.getUsedQuestionIds(subject);
+  const allQuestions = questionBank[subject] || [];
+
+  const unusedQuestions = allQuestions
+    .map((q, index) => ({ ...q, id: index }))
+    .filter(q => !usedIds.includes(q.id));
+
+  if (unusedQuestions.length < count) {
+    if (unusedQuestions.length > 0) {
+      return unusedQuestions.slice(0, count);
+    }
+    sessionManager.resetSession(subject);
+    return allQuestions.map((q, index) => ({ ...q, id: index })).slice(0, count);
+  }
+
+  return unusedQuestions
+    .sort(() => Math.random() - 0.5)
+    .slice(0, count);
+}
+
+function startTimer() {
+  startTime = Date.now();
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function createQuestionCard(question, index, total) {
+  const wrapper = document.createElement('section');
+  wrapper.className = 'question-card';
+
+  const difficultyClass = `difficulty-${question.difficulty.toLowerCase()}`;
+
+  wrapper.innerHTML = `
+    <div class="question-meta">
+      <span>Question ${index + 1} of ${total}</span>
+      <span class="${difficultyClass}">${question.difficulty}</span>
+    </div>
+    <p>${question.question}</p>
+    <div class="answer-group">
+      ${question.options
+        .map(
+          (option, optionIndex) => `
+            <label>
+              <input type="radio" name="question-${index}" value="${option}" />
+              <span>${option}</span>
+            </label>
+          `
+        )
+        .join('')}
+    </div>
+    <div class="explanation hidden" data-explanation-index="${index}">
+      <strong>Explanation:</strong>
+      <p>${question.explanation || 'No explanation available for this question.'}</p>
+    </div>
+  `;
+
+  return wrapper;
+}
+
+function updateProgress() {
+  const answeredCount = testForm.querySelectorAll('input[type="radio"]:checked').length;
+  const totalCount = testForm.querySelectorAll('input[type="radio"]').length;
+  const progress = (answeredCount / totalCount) * 100;
+
+  progressFill.style.width = progress + '%';
+  progressInfo.textContent = `Answered ${answeredCount} of ${totalCount}`;
+}
+
+// ==================== SECURITY FUNCTIONS ====================
+function enableTestSecurity() {
+  // Prevent copy-paste
+  document.addEventListener('contextmenu', preventDefault);
+  document.addEventListener('copy', preventDefault);
+  document.addEventListener('paste', preventDefault);
+  document.addEventListener('cut', preventDefault);
+  document.addEventListener('selectstart', preventDefault);
+  document.addEventListener('dragstart', preventDefault);
+
+  // Prevent keyboard shortcuts
+  document.addEventListener('keydown', preventCopyPasteKeys);
+
+  // Monitor tab switching
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  // Enter fullscreen
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.log('Fullscreen not supported or denied:', err);
+    });
+  }
+
+  testInProgress = true;
+  tabSwitches = 0;
+}
+
+function disableTestSecurity() {
+  // Remove security measures
+  document.removeEventListener('contextmenu', preventDefault);
+  document.removeEventListener('copy', preventDefault);
+  document.removeEventListener('paste', preventDefault);
+  document.removeEventListener('cut', preventDefault);
+  document.removeEventListener('selectstart', preventDefault);
+  document.removeEventListener('dragstart', preventDefault);
+  document.removeEventListener('keydown', preventCopyPasteKeys);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+  // Exit fullscreen
+  if (document.exitFullscreen) {
+    document.exitFullscreen().catch(err => console.log('Exit fullscreen error:', err));
+  }
+
+  testInProgress = false;
+}
+
+function preventDefault(e) {
+  e.preventDefault();
+  return false;
+}
+
+function preventCopyPasteKeys(e) {
+  // Prevent Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, F12, etc.
+  if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'a')) {
+    e.preventDefault();
+    showSecurityWarning('Copy-paste operations are not allowed during the test.');
+    return false;
+  }
+  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
+    e.preventDefault();
+    showSecurityWarning('Developer tools are disabled during the test.');
+    return false;
+  }
+}
+
+function handleVisibilityChange() {
+  if (document.hidden && testInProgress) {
+    tabSwitches++;
+    if (tabSwitches >= maxTabSwitches) {
+      showSecurityWarning('Test terminated due to multiple tab switches. Please contact your instructor.');
+      terminateTest();
+    } else {
+      showSecurityWarning(`Warning: Tab switching detected (${tabSwitches}/${maxTabSwitches}). Please stay on this tab.`);
+    }
+  }
+}
+
+function showSecurityWarning(message) {
+  const warning = document.createElement('div');
+  warning.className = 'security-warning';
+  warning.innerHTML = `
+    <div class="warning-content">
+      <h3>Security Alert</h3>
+      <p>${message}</p>
+      <button onclick="this.parentElement.parentElement.remove()">OK</button>
+    </div>
+  `;
+  document.body.appendChild(warning);
+}
+
+function terminateTest() {
+  disableTestSecurity();
+  stopTimer();
+  testContainer.classList.add('hidden');
+  alert('Test has been terminated due to security violations.');
+}
+
+// ==================== SCHEDULE TEST FUNCTIONS ====================
+function handleScheduleSubmit(event) {
+  event.preventDefault();
+
+  const testData = {
+    subject: scheduleSubject.value,
+    date: scheduleDate.value,
+    time: scheduleTime.value,
+    duration: parseInt(scheduleDuration.value),
+    numQuestions: parseInt(scheduleQuestions.value),
+  };
+
+  const scheduledTest = sessionManager.scheduleTest(testData);
+  displayAssignmentStatus();
+
+  // Reset form
+  if (scheduleForm) {
+    scheduleForm.reset();
+  }
+
+  alert(`Test scheduled successfully for ${subjectData[testData.subject]} on ${testData.date} at ${testData.time}`);
+}
+
+function displayAssignmentStatus() {
+  if (!scheduleStatus) return;
+
+  const tests = sessionManager.getScheduledTests();
+  const now = new Date();
+  const activeTest = tests.find(test => {
+    const testDateTime = new Date(`${test.date}T${test.time}`);
+    return testDateTime <= now && testDateTime >= new Date(now.getTime() - test.duration * 60000);
+  });
+
+  if (activeTest) {
+    scheduleStatus.innerHTML = `
+      <div class="assignment-message">
+        <p>A test has been assigned and is available now.</p>
+        <button id="start-assigned-test" class="action-button">Start Assigned Test</button>
+      </div>
+    `;
+    const startButton = document.getElementById('start-assigned-test');
+    if (startButton) {
+      startButton.addEventListener('click', () => startScheduledTest(activeTest.id));
+    }
+    return;
+  }
+
+  const upcomingTest = tests.find(test => new Date(`${test.date}T${test.time}`) > now);
+  if (upcomingTest) {
+    scheduleStatus.textContent = 'A test has been assigned and will start soon.';
+    return;
+  }
+
+  scheduleStatus.textContent = 'No test has been assigned yet.';
+}
+
+function startScheduledTest(testId) {
+  const test = sessionManager.scheduledTests.find(t => t.id === testId);
+  if (!test) return;
+
+  // Set the subject and number of questions
+  subjectSelect.value = test.subject;
+  numQuestionsSelect.value = test.numQuestions;
+
+  // Switch to mock test view and start
+  showView('mock-test');
+  loadTest();
+}
+
+function deleteScheduledTest(testId) {
+  if (confirm('Are you sure you want to delete this scheduled test?')) {
+    sessionManager.deleteScheduledTest(testId);
+    displayAssignmentStatus();
+  }
+}
+
+function renderTest(questions) {
+  testTitle.textContent = `${subjectData[subjectSelect.value]} - Mock Test`;
+  testDescription.textContent = `Answer ${questions.length} questions. Each correct answer is worth ${(100 / questions.length).toFixed(1)} points.`;
+  testForm.innerHTML = '';
+  testResult.classList.add('hidden');
+  activeQuestions = questions;
+
+  questions.forEach((question, index) => {
+    const card = createQuestionCard(question, index, questions.length);
+    testForm.appendChild(card);
+  });
+
+  submitTestButton.classList.remove('hidden');
+  submitTestButton.disabled = false;
+  submitTestButton.textContent = 'Submit Test';
+  loadMoreButton.classList.add('hidden');
+
+  testContainer.classList.remove('hidden');
+  updateProgress();
+  startTimer();
+  enableTestSecurity(); // Enable security measures
+  window.scrollTo(0, testContainer.offsetTop - 100);
+}
+
+function evaluateTest(event) {
+  event.preventDefault();
+  stopTimer();
+  disableTestSecurity(); // Disable security measures
+
+  const questions = testForm.querySelectorAll('.question-card');
+  let score = 0;
+  let answeredCount = 0;
+
+  questions.forEach((card, index) => {
+    const selected = card.querySelector('input[type="radio"]:checked');
+    const explanationBlock = card.querySelector('.explanation');
+
+    const correctAnswer = activeQuestions[index].answer;
+    const labels = Array.from(card.querySelectorAll('label'));
+
+    labels.forEach(label => {
+      const input = label.querySelector('input[type="radio"]');
+      if (!input) return;
+      const optionValue = input.value;
+      input.disabled = true;
+      label.classList.remove('correct', 'incorrect');
+
+      if (optionValue === correctAnswer) {
+        label.classList.add('correct');
+      }
+      if (selected && optionValue === selected.value && selected.value !== correctAnswer) {
+        label.classList.add('incorrect');
+      }
+    });
+
+    if (selected) {
+      answeredCount++;
+      const selectedValue = selected.value;
+      if (selectedValue === correctAnswer) {
+        score++;
+        card.classList.add('correct');
+      } else {
+        card.classList.add('incorrect');
+      }
+    } else {
+      card.classList.add('incorrect');
+    }
+
+    if (explanationBlock) {
+      explanationBlock.classList.remove('hidden');
+    }
+  });
+
+  submitTestButton.disabled = true;
+  submitTestButton.textContent = 'Submitted';
+  loadMoreButton.classList.remove('hidden');
+
+  const timeElement = timerDisplay.textContent;
+  const percentage = Math.round((score / questions.length) * 100);
+
+  sessionManager.recordTestAttempt(score, questions.length);
+
+  testResult.innerHTML = `
+    <div class="result-score">${score} / ${questions.length} (${percentage}%)</div>
+    <div class="result-details">
+      <div class="result-item">
+        <div class="result-item-label">Questions Answered</div>
+        <div class="result-item-value">${answeredCount} / ${questions.length}</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Time Taken</div>
+        <div class="result-item-value">${timeElement}</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Accuracy</div>
+        <div class="result-item-value">${percentage}%</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Performance</div>
+        <div class="result-item-value">${percentage >= 80 ? '🎯 Excellent' : percentage >= 60 ? '✓ Good' : '⚠ Fair'}</div>
+      </div>
+    </div>
+  `;
+  testResult.classList.remove('hidden');
+  updateStats();
+}
+
+function updateStats() {
+  const stats = sessionManager.getStats();
+  document.getElementById('total-attempted').textContent = stats.totalAttempted;
+  document.getElementById('avg-score').textContent = stats.avgScore + '%';
+  document.getElementById('questions-used').textContent = stats.totalUsed;
+  document.getElementById('unique-questions').textContent = stats.uniqueAvailable;
+}
+
+function loadTest() {
+  const subject = subjectSelect.value;
+  const numQuestions = parseInt(numQuestionsSelect.value);
+  const questions = getUnusedQuestions(subject, numQuestions);
+
+  if (questions.length === 0) {
+    alert('No questions available for this subject. Please reset the session.');
+    return;
+  }
+
+  const questionIds = questions.map(q => q.id);
+  sessionManager.markQuestionsAsUsed(subject, questionIds);
+
+  const questionsToRender = questions.map(({ id, ...q }) => q);
+  renderTest(questionsToRender);
+}
+
+// ==================== EVENT LISTENERS ====================
+navButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    showView(button.dataset.view);
+    if (button.dataset.view === 'schedule-test') {
+      displayAssignmentStatus();
+    }
+  });
+});
+
+startTestButton.addEventListener('click', loadTest);
+resetSessionButton.addEventListener('click', () => {
+  const subject = subjectSelect.value;
+  sessionManager.resetSession(subject);
+  alert(`Progress for ${subjectData[subject]} has been reset. You can take the test again.`);
+  updateStats();
+});
+
+testForm.addEventListener('submit', evaluateTest);
+testForm.addEventListener('change', updateProgress);
+submitTestButton.addEventListener('click', () => testForm.requestSubmit());
+loadMoreButton.addEventListener('click', loadTest);
+
+if (aiButton) {
+  aiButton.addEventListener('click', () => {
+    alert('AI Interview simulation started!');
+  });
+}
+
+// Schedule form event listener
+if (scheduleForm) {
+  scheduleForm.addEventListener('submit', handleScheduleSubmit);
+}
+
+// ==================== ADMIN FUNCTIONS ====================
+function openAdminLogin() {
+  adminLoginModal.classList.remove('hidden');
+}
+
+function closeAdminLogin() {
+  adminLoginModal.classList.add('hidden');
+  adminEmail.value = '';
+  adminPassword.value = '';
+}
+
+function handleAdminLogin(event) {
+  event.preventDefault();
+  const email = adminEmail.value;
+  const password = adminPassword.value;
+
+  if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+    isAdminLoggedIn = true;
+    closeAdminLogin();
+    adminNavBtn.classList.remove('hidden');
+    showView('admin');
+    displayAdminTests();
+  } else {
+    alert('Invalid credentials. Please try again.');
+  }
+}
+
+function handleAdminLogout() {
+  if (confirm('Are you sure you want to logout?')) {
+    isAdminLoggedIn = false;
+    adminNavBtn.classList.add('hidden');
+    showView('dashboard');
+  }
+}
+
+function handleAdminScheduleSubmit(event) {
+  event.preventDefault();
+
+  const testData = {
+    subject: adminSubject.value,
+    date: adminDate.value,
+    time: adminTime.value,
+    duration: parseInt(adminDuration.value),
+    numQuestions: parseInt(adminQuestions.value),
+  };
+
+  const scheduledTest = sessionManager.scheduleTest(testData);
+  displayAdminTests();
+  adminScheduleForm.reset();
+  alert(`Test scheduled successfully for ${subjectData[testData.subject]} on ${testData.date} at ${testData.time}`);
+}
+
+function displayAdminTests() {
+  const tests = sessionManager.getScheduledTests();
+
+  if (tests.length === 0) {
+    adminTestsList.innerHTML = '<p>No tests assigned yet.</p>';
+    return;
+  }
+
+  const testsHTML = tests.map(test => {
+    const testDateTime = new Date(`${test.date}T${test.time}`);
+    const now = new Date();
+    const isActive = testDateTime <= now && testDateTime >= new Date(now.getTime() - test.duration * 60000);
+    const isUpcoming = testDateTime > now;
+
+    return `
+      <div class="admin-test-card ${isActive ? 'active' : isUpcoming ? 'upcoming' : 'past'}">
+        <div class="test-info">
+          <h3>${subjectData[test.subject]}</h3>
+          <p><strong>Date:</strong> ${test.date}</p>
+          <p><strong>Time:</strong> ${test.time}</p>
+          <p><strong>Duration:</strong> ${test.duration} minutes</p>
+          <p><strong>Questions:</strong> ${test.numQuestions}</p>
+          <p><strong>Status:</strong> ${isActive ? 'Active' : isUpcoming ? 'Upcoming' : 'Past'}</p>
+        </div>
+        <div class="test-actions">
+          <button onclick="deleteAdminTest('${test.id}')" class="action-button secondary">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  adminTestsList.innerHTML = testsHTML;
+}
+
+function deleteAdminTest(testId) {
+  if (confirm('Are you sure you want to delete this test?')) {
+    sessionManager.deleteScheduledTest(testId);
+    displayAdminTests();
+  }
+}
+
+// Admin event listeners
+if (adminLoginForm) {
+  adminLoginForm.addEventListener('submit', handleAdminLogin);
+}
+
+if (adminLogoutBtn) {
+  adminLogoutBtn.addEventListener('click', handleAdminLogout);
+}
+
+if (adminScheduleForm) {
+  adminScheduleForm.addEventListener('submit', handleAdminScheduleSubmit);
+}
+
+updateStats();
+

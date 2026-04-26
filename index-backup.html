@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENDHUKO THELIDHU</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Language Switcher (Main App) -->
+    <div class="app-language-switcher">
+      <button class="lang-btn" data-lang="en" title="English">
+        <span class="lang-code">EN</span>
+      </button>
+      <button class="lang-btn" data-lang="te" title="Telugu">
+        <span class="lang-code">TE</span>
+      </button>
+    </div>
+
+    <aside class="sidebar">
+      <div class="brand" data-i18n="common.appName">CSP  Anukuntunna</div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard" data-i18n="navigation.dashboard">Dashboard</button>
+        <button class="nav-item" data-view="mock-test" data-i18n="navigation.mockTest">Mock Test</button>
+        <button class="nav-item" data-view="schedule-test" data-i18n="navigation.scheduledTest">Assigned Test</button>
+        <button class="nav-item" data-view="ai-interview" data-i18n="navigation.aiInterview">AI Interview</button>
+        <button class="nav-item" data-view="career-guidance" data-i18n="navigation.careerGuidance">Career Guidance</button>
+        <button class="nav-item hidden" id="admin-nav-btn" data-view="admin" data-i18n="navigation.adminPanel">Admin Panel</button>
+      </nav>
+      
+      <!-- User Info and Logout -->
+      <div class="user-section">
+        <div class="user-info">
+          <div class="user-name" id="user-name">User</div>
+          <div class="user-role" id="user-role">User</div>
+        </div>
+        <button id="logout-btn" class="logout-button" data-i18n="common.logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <section id="dashboard" class="view active">
+        <h1 data-i18n="dashboard.title">Dashboard</h1>
+        <p data-i18n="dashboard.subtitle">Track your progress, upcoming tests, and interview preparation status.</p>
+        <div class="cards">
+          <div class="card">
+            <h2 data-i18n="dashboard.performance">Performance</h2>
+            <p data-i18n="dashboard.performanceDesc">Review your latest mock test scores and improvement areas.</p>
+          </div>
+          <div class="card">
+            <h2 data-i18n="dashboard.schedule">Schedule</h2>
+            <p data-i18n="dashboard.scheduleDesc">See planned mock tests, interview slots, and study sessions.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="mock-test" class="view">
+        <h1 data-i18n="mockTest.title">Mock Test</h1>
+        <p data-i18n="mockTest.subtitle">Select a subject to start a professional mock test with randomly generated questions.</p>
+        <div class="panel">
+          <div class="control-row">
+            <label for="subject-select" data-i18n="mockTest.subject">Subject</label>
+            <select id="subject-select">
+              <option value="data-structures">Data Structures</option>
+              <option value="algorithms">Algorithms</option>
+              <option value="system-design">System Design</option>
+              <option value="machine-learning">Machine Learning</option>
+              <option value="databases">Databases</option>
+            </select>
+            <label for="num-questions" data-i18n="mockTest.numQuestions">Number of Questions</label>
+            <select id="num-questions">
+              <option value="5">5 Questions</option>
+              <option value="10" selected>10 Questions</option>
+              <option value="15">15 Questions</option>
+            </select>
+            <button id="start-test" class="action-button" data-i18n="mockTest.startTest">Start Test</button>
+            <button id="reset-session" class="action-button secondary" data-i18n="mockTest.resetProgress">Reset Progress</button>
+          </div>
+
+          <div id="test-container" class="test-container hidden">
+            <div class="test-header">
+              <div class="test-header-top">
+                <div>
+                  <h2 id="test-title">Mock Test</h2>
+                  <p id="test-description">Answer the questions below and submit to view your score.</p>
+                </div>
+                <div class="test-timer">
+                  <span id="timer" class="timer-display">00:00</span>
+                </div>
+              </div>
+              <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+              </div>
+              <div class="progress-text">
+                <span id="progress-info">Question 1 of 10</span>
+              </div>
+            </div>
+            <form id="test-form"></form>
+            <div class="test-actions">
+              <button id="submit-test" type="button" class="action-button">Submit Test</button>
+              <button id="load-more" type="button" class="action-button secondary hidden">Next Test</button>
+            </div>
+            <div id="test-result" class="test-result hidden"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 data-i18n="mockTest.testStatistics">Test Statistics</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="total-attempted">0</div>
+              <div class="stat-label" data-i18n="mockTest.testsAttempted">Tests Attempted</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="avg-score">0%</div>
+              <div class="stat-label" data-i18n="mockTest.averageScore">Average Score</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="questions-used">0</div>
+              <div class="stat-label" data-i18n="mockTest.questionsUsed">Questions Used</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="unique-questions">0</div>
+              <div class="stat-label" data-i18n="mockTest.uniqueQuestions">Unique Questions in Bank</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="admin" class="view hidden">
+        <h1>Admin Panel</h1>
+        <p>Manage and assign tests to students.</p>
+        <div class="panel">
+          <div class="admin-header">
+            <h2>Schedule New Test</h2>
+          </div>
+          <form id="admin-schedule-form">
+            <div class="form-group">
+              <label for="admin-subject">Subject</label>
+              <select id="admin-subject" required>
+                <option value="">Select Subject</option>
+                <option value="data-structures">Data Structures</option>
+                <option value="algorithms">Algorithms</option>
+                <option value="system-design">System Design</option>
+                <option value="machine-learning">Machine Learning</option>
+                <option value="databases">Databases</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="admin-date">Date</label>
+              <input type="date" id="admin-date" required />
+            </div>
+            <div class="form-group">
+              <label for="admin-time">Time</label>
+              <input type="time" id="admin-time" required />
+            </div>
+            <div class="form-group">
+              <label for="admin-duration">Duration (minutes)</label>
+              <input type="number" id="admin-duration" min="5" max="180" value="60" required />
+            </div>
+            <div class="form-group">
+              <label for="admin-questions">Number of Questions</label>
+              <select id="admin-questions" required>
+                <option value="5">5 Questions</option>
+                <option value="10" selected>10 Questions</option>
+                <option value="15">15 Questions</option>
+              </select>
+            </div>
+            <button type="submit" class="action-button">Schedule Test</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>Assigned Tests</h2>
+          <div id="admin-tests-list">
+            <p>No tests assigned yet.</p>
+          </div>
+        </div>
+      </section>
+      <section id="schedule-test" class="view">
+        <h1>Assigned Test</h1>
+        <p>Check whether a mock test has been assigned to you.</p>
+        <div class="panel">
+          <h2>Assignment Status</h2>
+          <div id="schedule-status" class="schedule-status">
+            Checking for assigned tests...
+          </div>
+        </div>
+      </section>
+
+      <section id="ai-interview" class="view">
+        <h1>AI Interview</h1>
+        <p>Practice interview questions with AI-driven prompts and feedback.</p>
+        <div class="panel">
+          <h2>Get started</h2>
+          <p>Click the button below to launch an AI interview simulation.</p>
+          <button id="start-ai" class="action-button">Start AI Interview</button>
+        </div>
+      </section>
+
+      <section id="career-guidance" class="view">
+        <h1>Career Guidance</h1>
+        <p>Explore career paths and skill development based on your educational level.</p>
+
+        <div class="panel">
+          <h2>Select Your Level</h2>
+          <div class="level-selector">
+            <button class="level-btn active" data-level="10th">10th Standard</button>
+            <button class="level-btn" data-level="inter">Intermediate (12th)</button>
+          </div>
+        </div>
+
+        <!-- Career Guidance for 10th Students -->
+        <div id="guidance-10th" class="guidance-content active">
+          <div class="panel">
+            <h2>🎯 Career Pathways for 10th Standard Students</h2>
+            <p>Explore various career options and start building your foundation now!</p>
+
+            <div class="career-grid">
+              <div class="career-card">
+                <h3>🖥️ Information Technology</h3>
+                <p><strong>Focus Areas:</strong> Programming, Web Design, App Development</p>
+                <p><strong>Subjects to Focus:</strong> Mathematics, Science, Computer Science</p>
+                <p><strong>Skills to Develop:</strong> Coding, Problem-solving, Logical thinking</p>
+                <p><strong>Career Options:</strong> Software Engineer, Web Developer, App Developer, Data Analyst</p>
+              </div>
+
+              <div class="career-card">
+                <h3>🔬 Science & Research</h3>
+                <p><strong>Focus Areas:</strong> Physics, Chemistry, Biology, Space Science</p>
+                <p><strong>Subjects to Focus:</strong> Science (all streams), Mathematics</p>
+                <p><strong>Skills to Develop:</strong> Lab work, Critical thinking, Analysis, Documentation</p>
+                <p><strong>Career Options:</strong> Scientist, Researcher, Doctor, Engineer</p>
+              </div>
+
+              <div class="career-card">
+                <h3>💼 Commerce & Business</h3>
+                <p><strong>Focus Areas:</strong> Finance, Accounting, Marketing, Entrepreneurship</p>
+                <p><strong>Subjects to Focus:</strong> Mathematics, Social Studies, Economics basics</p>
+                <p><strong>Skills to Develop:</strong> Numeracy, Communication, Business thinking</p>
+                <p><strong>Career Options:</strong> Chartered Accountant, Businessman, Marketing Manager</p>
+              </div>
+
+              <div class="career-card">
+                <h3>📚 Humanities & Social Services</h3>
+                <p><strong>Focus Areas:</strong> History, Geography, Languages, Social Studies</p>
+                <p><strong>Subjects to Focus:</strong> Social Studies, Languages, History</p>
+                <p><strong>Skills to Develop:</strong> Communication, Research, Creativity</p>
+                <p><strong>Career Options:</strong> Journalist, Teacher, Lawyer, Diplomat</p>
+              </div>
+
+              <div class="career-card">
+                <h3>🏗️ Engineering & Construction</h3>
+                <p><strong>Focus Areas:</strong> Civil, Mechanical, Electrical Engineering,Computer Science</p>
+                <p><strong>Subjects to Focus:</strong> Mathematics, Science, Technical subjects</p>
+                <p><strong>Skills to Develop:</strong> Design thinking, Technical knowledge, Problem-solving</p>
+                <p><strong>Career Options:</strong> Engineer, Architect, Construction Manager</p>
+              </div>
+
+              <div class="career-card">
+                <h3>🎨 Arts & Creative</h3>
+                <p><strong>Focus Areas:</strong> Art, Design, Music, Literature</p>
+                <p><strong>Subjects to Focus:</strong> Art, English, Social Studies</p>
+                <p><strong>Skills to Develop:</strong> Creativity, Design, Communication</p>
+                <p><strong>Career Options:</strong> Designer, Artist, Animator, Content Creator</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>📖 What You Should Do Now (10th Standard)</h2>
+            <div class="tips-list">
+              <div class="tip-item">
+                <h4>✅ Focus on Core Subjects</h4>
+                <p>Excel in Mathematics, Science, and English - the foundation for most careers</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Explore Your Interests</h4>
+                <p>Try different activities, clubs, and projects to discover what you're passionate about</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Develop Basic Computer Skills</h4>
+                <p>Learn MS Office, internet basics, and typing - essential for almost every career</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Build Communication Skills</h4>
+                <p>Participate in debates, group discussions, and presentations to improve confidence</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Choose Your Stream Wisely</h4>
+                <p>Select Science, Commerce, or Humanities based on your interests and strengths</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Take up Internships/Volunteering</h4>
+                <p>Gain practical experience by volunteering or doing small internships in areas of interest</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Career Guidance for Intermediate Students -->
+        <div id="guidance-inter" class="guidance-content">
+          <div class="panel">
+            <h2>🎯 Career Pathways for Intermediate (12th) Students</h2>
+            <p>Plan your career strategically with specialized skill development!</p>
+
+            <div class="career-grid">
+              <div class="career-card">
+                <h3>💻 Tech & Software Development</h3>
+                <p><strong>Focus Areas:</strong> Full-Stack Development, Cloud Computing, AI/ML</p>
+                <p><strong>Subjects to Focus:</strong> Mathematics, Physics, Computer Science</p>
+                <p><strong>Skills to Develop:</strong> Python, Java, Web Technologies, Database Management</p>
+                <p><strong>Higher Education:</strong> B.Tech in CSE, BCA, B.Sc in Computer Science</p>
+                <p><strong>Career Options:</strong> Software Engineer, Cloud Architect, AI Specialist, DevOps Engineer</p>
+              </div>
+
+              <div class="career-card">
+                <h3>🔧 Mechanical & Electrical Engineering</h3>
+                <p><strong>Focus Areas:</strong> Automotive, Energy, Robotics</p>
+                <p><strong>Subjects to Focus:</strong> Physics, Mathematics, Chemistry</p>
+                <p><strong>Skills to Develop:</strong> CAD, Technical Drawing, Circuit Design</p>
+                <p><strong>Higher Education:</strong> B.Tech in Mechanical/Electrical Engineering</p>
+                <p><strong>Career Options:</strong> Design Engineer, Project Manager, Manufacturing Engineer</p>
+              </div>
+
+              <div class="career-card">
+                <h3>👨‍⚕️ Medical & Healthcare</h3>
+                <p><strong>Focus Areas:</strong> General Medicine, Dentistry, Nursing, Pharmacy</p>
+                <p><strong>Subjects to Focus:</strong> Biology, Chemistry, Physics</p>
+                <p><strong>Skills to Develop:</strong> Lab work, Patience, Analytical thinking, Communication</p>
+                <p><strong>Higher Education:</strong> MBBS, BDS, B.Pharm, B.Sc Nursing</p>
+                <p><strong>Career Options:</strong> Doctor, Dentist, Pharmacist, Nurse</p>
+              </div>
+
+              <div class="career-card">
+                <h3>📊 Commerce & Accounting</h3>
+                <p><strong>Focus Areas:</strong> Accounting, Finance, Investment Management</p>
+                <p><strong>Subjects to Focus:</strong> Accounts, Economics, Mathematics</p>
+                <p><strong>Skills to Develop:</strong> Financial Analysis, Tally, Excel, Tax Planning</p>
+                <p><strong>Higher Education:</strong> B.Com, CA, CMA, Financial Analyst Courses</p>
+                <p><strong>Career Options:</strong> CA, Tax Consultant, Investment Banker, CFO</p>
+              </div>
+
+              <div class="career-card">
+                <h3>⚖️ Law & Governance</h3>
+                <p><strong>Focus Areas:</strong> Constitutional Law, Corporate Law, Advocacy</p>
+                <p><strong>Subjects to Focus:</strong> English, History, Social Studies, Economics</p>
+                <p><strong>Skills to Develop:</strong> Legal research, Argumentation, Public speaking, Writing</p>
+                <p><strong>Higher Education:</strong> B.A LLB, B.Sc LLB, Law specializations</p>
+                <p><strong>Career Options:</strong> Lawyer, Judge, Legal Consultant, Government Official</p>
+              </div>
+
+              <div class="career-card">
+                <h3>🎓 Teaching & Education</h3>
+                <p><strong>Focus Areas:</strong> Subject Specialization, Educational Technology</p>
+                <p><strong>Subjects to Focus:</strong> Any subject as per specialization</p>
+                <p><strong>Skills to Develop:</strong> Communication, Pedagogy, Technology tools, Leadership</p>
+                <p><strong>Higher Education:</strong> B.Sc/B.A B.Ed, M.Sc Ed, MEd</p>
+                <p><strong>Career Options:</strong> Teacher, Educator, Trainer, Content Developer</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>📖 What You Should Do Now (Intermediate Students)</h2>
+            <div class="tips-list">
+              <div class="tip-item">
+                <h4>✅ Excel in Your Stream</h4>
+                <p>Focus on scoring high in your specialized subjects (PCM/PCB/Commerce/Humanities)</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Build Professional Skills</h4>
+                <p>Learn coding, data analysis, design tools, or domain-specific software</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Prepare for Competitive Exams</h4>
+                <p>Start preparing for JEE, NEET, CLAT, KVPY, or other entrance exams early</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Gain Industry Exposure</h4>
+                <p>Attend workshops, webinars, and industry talks to understand real-world careers</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Internship Experience</h4>
+                <p>Complete summer internships in your field of interest to build resume strength</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Build Your Portfolio</h4>
+                <p>Create projects, contribute to open source, or work on case studies in your field</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Improve English & Communication</h4>
+                <p>Work on presentation skills, writing, and public speaking - crucial for all careers</p>
+              </div>
+              <div class="tip-item">
+                <h4>✅ Network & Connect</h4>
+                <p>Join professional groups, LinkedIn, and attend networking events to build connections</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Security Warning Modal -->
+  <div id="security-warning" class="security-warning hidden">
+    <div class="warning-content">
+      <h3>⚠ Test Terminated</h3>
+      <p id="warning-message">Your test has been terminated due to suspicious activity.</p>
+      <button onclick="location.reload()">Return to Dashboard</button>
+    </div>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

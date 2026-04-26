@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placement Dashboard - CSP</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Language Switcher -->
+    <div class="app-language-switcher">
+      <button class="lang-btn" data-lang="en" title="English">
+        <span class="lang-code">EN</span>
+      </button>
+      <button class="lang-btn" data-lang="te" title="Telugu">
+        <span class="lang-code">TE</span>
+      </button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand" data-i18n="common.appName">CSP - Anukuntunna</div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard" data-i18n="navigation.dashboard">Dashboard</button>
+        <button class="nav-item" data-view="mock-test" data-i18n="navigation.mockTest">Mock Test</button>
+        <button class="nav-item" data-view="schedule-test" data-i18n="navigation.scheduledTest">Assigned Test</button>
+        <button class="nav-item" data-view="career-guidance" data-i18n="navigation.careerGuidance">Career Guidance</button>
+        <button class="nav-item" data-view="ai-chatbot" data-i18n="navigation.aiChatbot">🤖 AI Doubt Solver</button>
+        <button class="nav-item hidden" id="admin-nav-btn" data-view="admin" data-i18n="navigation.adminPanel">Admin Panel</button>
+      </nav>
+
+      <!-- User Info and Logout -->
+      <div class="user-section">
+        <div class="user-info">
+          <div class="user-name" id="user-name">User</div>
+          <div class="user-role" id="user-role">User</div>
+        </div>
+        <button id="logout-btn" class="logout-button" data-i18n="common.logout">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard View -->
+      <section id="dashboard" class="view active">
+        <div class="dashboard-header">
+          <div>
+            <h1 data-i18n="dashboard.title">Dashboard</h1>
+            <p class="dashboard-welcome">Welcome back, <span id="dashboard-user-name">User</span>! Here's your preparation overview.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+            <div class="dashboard-date" id="dashboard-date"></div>
+            <button class="link-button" onclick="clearAllProgress()" style="color:#ef4444;">🗑️ Clear Progress</button>
+          </div>
+        </div>
+
+        <!-- Quick Stats Row -->
+        <div class="dashboard-stats-row" id="dashboard-stats-row">
+          <div class="dashboard-stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-info">
+              <div class="stat-number" id="stat-tests-taken">0</div>
+              <div class="stat-label" data-i18n="dashboard.testsTaken">Tests Taken</div>
+            </div>
+          </div>
+          <div class="dashboard-stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-info">
+              <div class="stat-number" id="stat-avg-score">0%</div>
+              <div class="stat-label" data-i18n="dashboard.avgScore">Average Score</div>
+            </div>
+          </div>
+          <div class="dashboard-stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-info">
+              <div class="stat-number" id="stat-best-score">0%</div>
+              <div class="stat-label" data-i18n="dashboard.bestScore">Best Score</div>
+            </div>
+          </div>
+          <div class="dashboard-stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <div class="stat-number" id="stat-total-time">0m</div>
+              <div class="stat-label" data-i18n="dashboard.totalTime">Total Time</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+          <!-- Recent Tests -->
+          <div class="dashboard-panel">
+            <div class="panel-header">
+              <h3>📋 Recent Tests</h3>
+              <button class="link-button" onclick="navigateToView('mock-test')">View All</button>
+            </div>
+            <div id="recent-tests-container">
+              <p class="empty-state">No tests taken yet. Start your first mock test!</p>
+            </div>
+          </div>
+
+          <!-- Subject Breakdown -->
+          <div class="dashboard-panel">
+            <div class="panel-header">
+              <h3>📈 Subject Performance</h3>
+            </div>
+            <div id="subject-breakdown-container">
+              <p class="empty-state">Take tests to see your subject-wise performance.</p>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="dashboard-panel quick-actions-panel">
+            <div class="panel-header">
+              <h3>⚡ Quick Actions</h3>
+            </div>
+            <div class="quick-actions-grid">
+              <button class="quick-action-btn" onclick="navigateToView('mock-test')">
+                <span class="quick-action-icon">📝</span>
+                <span class="quick-action-label">Start Mock Test</span>
+              </button>
+              <button class="quick-action-btn" onclick="navigateToView('career-guidance')">
+                <span class="quick-action-icon">🎯</span>
+                <span class="quick-action-label">Career Guidance</span>
+              </button>
+              <button class="quick-action-btn" onclick="navigateToView('schedule-test')">
+                <span class="quick-action-icon">📅</span>
+                <span class="quick-action-label">Assigned Tests</span>
+              </button>
+              <button class="quick-action-btn" onclick="showTestHistory()">
+                <span class="quick-action-icon">📊</span>
+                <span class="quick-action-label">View History</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Upcoming Tests -->
+          <div class="dashboard-panel">
+            <div class="panel-header">
+              <h3>📅 Upcoming Tests</h3>
+              <button class="link-button" onclick="navigateToView('schedule-test')">View All</button>
+            </div>
+            <div id="dashboard-upcoming-tests">
+              <p class="empty-state">No upcoming tests assigned.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legacy Stats Container (kept for compatibility) -->
+        <div id="stats-container" class="stats-section hidden"></div>
+      </section>
+
+      <!-- Mock Test View -->
+      <section id="mock-test" class="view">
+        <h1 data-i18n="mockTest.title">Mock Test</h1>
+        <p data-i18n="mockTest.subtitle">Select a subject to start a professional mock test.</p>
+
+        <div class="panel">
+          <div class="control-row">
+            <label for="subject-select" data-i18n="mockTest.subject">Subject</label>
+            <select id="subject-select">
+              <option value="mathematics">Mathematics</option>
+              <option value="english">English</option>
+              <option value="logical-reasoning">Logical / Reasoning</option>
+              <option value="general-knowledge">General Knowledge / Current Affairs</option>
+              <option value="science-technology">Science and Technology</option>
+            </select>
+
+            <label for="num-questions" data-i18n="mockTest.numQuestions">Number of Questions</label>
+            <select id="num-questions">
+              <option value="5">5 Questions</option>
+              <option value="10" selected>10 Questions</option>
+              <option value="15">15 Questions</option>
+            </select>
+
+            <button id="start-test" class="action-button" data-i18n="mockTest.startTest">Start Test</button>
+            <button id="reset-session" class="action-button secondary" data-i18n="mockTest.resetProgress">Reset Progress</button>
+          </div>
+        </div>
+
+        <!-- Test Container -->
+        <div id="test-container" class="hidden">
+          <div class="test-header">
+            <div class="test-meta">
+              <h2 id="test-title">Mock Test</h2>
+              <p id="test-description">Answer questions</p>
+            </div>
+            <div class="test-timer">
+              <span data-i18n="mockTest.timeRemaining">Time Remaining:</span>
+              <span id="timer" class="timer-display">00:00</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <p id="progress-info" class="progress-info">Answered 0 of 10</p>
+          </div>
+
+          <!-- Test Form -->
+          <div id="test-form" class="test-form"></div>
+
+          <!-- Test Result -->
+          <div id="test-result" class="test-result hidden"></div>
+
+          <!-- Submit Button -->
+          <div class="test-actions">
+            <button id="submit-test" class="action-button" data-i18n="mockTest.submitTest">Submit Test</button>
+            <button id="load-more" class="action-button secondary hidden" data-i18n="mockTest.loadMore">Load More</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scheduled Tests View -->
+      <section id="schedule-test" class="view">
+        <h1 data-i18n="navigation.scheduledTest">Assigned Tests</h1>
+        <p data-i18n="schedule.subtitle">View tests assigned to you by administrators.</p>
+        <div id="schedule-test-container" class="tests-container">
+          <p data-i18n="schedule.noTests">No tests assigned yet.</p>
+        </div>
+      </section>
+
+      <!-- Career Guidance View -->
+      <section id="career-guidance" class="view">
+        <h1 data-i18n="navigation.careerGuidance">Career Guidance</h1>
+        <p data-i18n="career.subtitle">Discover the best competitive exams for your profile and get a personalized preparation plan.</p>
+
+        <!-- User Preference Form -->
+        <div class="career-form-panel">
+          <h3 data-i18n="career.formTitle">Tell Us About Yourself</h3>
+          <form id="career-preference-form" class="career-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cg-education" data-i18n="career.educationLabel">Highest Education</label>
+                <select id="cg-education" required>
+                  <option value="" data-i18n="career.selectEducation">-- Select --</option>
+                  <option value="10th" data-i18n="career.edu10th">10th Standard</option>
+                  <option value="12th" data-i18n="career.edu12th">Intermediate (12th)</option>
+                  <option value="graduate" data-i18n="career.eduGraduate">Graduate (Any Degree)</option>
+                  <option value="pg" data-i18n="career.eduPG">Post Graduate</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cg-interest" data-i18n="career.interestLabel">Career Interest</label>
+                <select id="cg-interest" required>
+                  <option value="" data-i18n="career.selectInterest">-- Select --</option>
+                  <option value="government" data-i18n="career.intGovt">Government Job (Central/State)</option>
+                  <option value="banking" data-i18n="career.intBanking">Banking Sector</option>
+                  <option value="defence" data-i18n="career.intDefence">Defence & Police</option>
+                  <option value="teaching" data-i18n="career.intTeaching">Teaching</option>
+                  <option value="railway" data-i18n="career.intRailway">Railway Jobs</option>
+                  <option value="insurance" data-i18n="career.intInsurance">Insurance</option>
+                  <option value="any" data-i18n="career.intAny">Open to All</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cg-subject" data-i18n="career.strongSubjectLabel">Strongest Subject</label>
+                <select id="cg-subject" required>
+                  <option value="" data-i18n="career.selectSubject">-- Select --</option>
+                  <option value="math" data-i18n="career.subMath">Mathematics / Quantitative</option>
+                  <option value="english" data-i18n="career.subEnglish">English Language</option>
+                  <option value="reasoning" data-i18n="career.subReasoning">Reasoning / Logical</option>
+                  <option value="gk" data-i18n="career.subGK">General Knowledge / Current Affairs</option>
+                  <option value="science" data-i18n="career.subScience">Science & Technology</option>
+                  <option value="all" data-i18n="career.subAll">All Rounder</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cg-location" data-i18n="career.locationLabel">Preferred Job Location</label>
+                <select id="cg-location" required>
+                  <option value="" data-i18n="career.selectLocation">-- Select --</option>
+                  <option value="central" data-i18n="career.locCentral">All India (Central Govt)</option>
+                  <option value="state" data-i18n="career.locState">Home State Only</option>
+                  <option value="any" data-i18n="career.locAny">Anywhere in India</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="action-button" data-i18n="career.getRecommendations">Get My Recommendations</button>
+          </form>
+        </div>
+
+        <!-- Exam Recommendations Results -->
+        <div id="exam-recommendations" class="exam-recommendations"></div>
+
+        <!-- Popular Exams Section (always visible) -->
+        <div class="popular-exams-section">
+          <h3 data-i18n="career.popularExamsTitle">Popular Competitive Exams</h3>
+          <div class="exam-categories">
+            <div class="exam-category">
+              <h4 data-i18n="career.catSSC">SSC Exams</h4>
+              <div class="exam-tags">
+                <span class="exam-tag">SSC CGL</span>
+                <span class="exam-tag">SSC CHSL</span>
+                <span class="exam-tag">SSC MTS</span>
+                <span class="exam-tag">SSC GD</span>
+                <span class="exam-tag">SSC Stenographer</span>
+              </div>
+            </div>
+            <div class="exam-category">
+              <h4 data-i18n="career.catBanking">Banking Exams</h4>
+              <div class="exam-tags">
+                <span class="exam-tag">IBPS PO</span>
+                <span class="exam-tag">IBPS Clerk</span>
+                <span class="exam-tag">SBI PO</span>
+                <span class="exam-tag">SBI Clerk</span>
+                <span class="exam-tag">RBI Grade B</span>
+              </div>
+            </div>
+            <div class="exam-category">
+              <h4 data-i18n="career.catUPSC">UPSC & Civil Services</h4>
+              <div class="exam-tags">
+                <span class="exam-tag">Civil Services (IAS/IPS)</span>
+                <span class="exam-tag">CDS</span>
+                <span class="exam-tag">NDA</span>
+                <span class="exam-tag">CAPF</span>
+                <span class="exam-tag">IFS</span>
+              </div>
+            </div>
+            <div class="exam-category">
+              <h4 data-i18n="career.catRailway">Railway Exams</h4>
+              <div class="exam-tags">
+                <span class="exam-tag">RRB NTPC</span>
+                <span class="exam-tag">RRB Group D</span>
+                <span class="exam-tag">RRB ALP</span>
+                <span class="exam-tag">RRB JE</span>
+              </div>
+            </div>
+            <div class="exam-category">
+              <h4 data-i18n="career.catDefence">Defence Exams</h4>
+              <div class="exam-tags">
+                <span class="exam-tag">AFCAT</span>
+                <span class="exam-tag">CDS</span>
+                <span class="exam-tag">NDA</span>
+                <span class="exam-tag">Indian Navy SSR</span>
+                <span class="exam-tag">Coast Guard</span>
+              </div>
+            </div>
+            <div class="exam-category">
+              <h4 data-i18n="career.catTeaching">Teaching Exams</h4>
+              <div class="exam-tags">
+                <span class="exam-tag">CTET</span>
+                <span class="exam-tag">TET (State)</span>
+                <span class="exam-tag">NET/SET</span>
+                <span class="exam-tag">DSSSB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preparation Tips -->
+        <div class="prep-tips-section">
+          <h3 data-i18n="career.prepTipsTitle">General Preparation Tips</h3>
+          <div class="tips-grid">
+            <div class="tip-card">
+              <div class="tip-icon">📚</div>
+              <h4 data-i18n="career.tip1Title">Understand the Syllabus</h4>
+              <p data-i18n="career.tip1Desc">Download the official syllabus and exam pattern. Focus on high-weightage topics first.</p>
+            </div>
+            <div class="tip-card">
+              <div class="tip-icon">⏰</div>
+              <h4 data-i18n="career.tip2Title">Daily Study Schedule</h4>
+              <p data-i18n="career.tip2Desc">Dedicate 4-6 hours daily. Divide time between Quant, Reasoning, English, and GK.</p>
+            </div>
+            <div class="tip-card">
+              <div class="tip-icon">📝</div>
+              <h4 data-i18n="career.tip3Title">Practice Previous Papers</h4>
+              <p data-i18n="career.tip3Desc">Solve at least 10 years of previous question papers to understand the pattern.</p>
+            </div>
+            <div class="tip-card">
+              <div class="tip-icon">📰</div>
+              <h4 data-i18n="career.tip4Title">Stay Updated</h4>
+              <p data-i18n="career.tip4Desc">Read daily current affairs. Follow reputable news sources and monthly magazines.</p>
+            </div>
+            <div class="tip-card">
+              <div class="tip-icon">🎯</div>
+              <h4 data-i18n="career.tip5Title">Mock Tests</h4>
+              <p data-i18n="career.tip5Desc">Take weekly mock tests on CSP to track progress and improve time management.</p>
+            </div>
+            <div class="tip-card">
+              <div class="tip-icon">💪</div>
+              <h4 data-i18n="career.tip6Title">Physical Fitness</h4>
+              <p data-i18n="career.tip6Desc">For defence and police exams, start physical training early. Running and stamina are key.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Chatbot View -->
+      <section id="ai-chatbot" class="view">
+        <div class="chatbot-header">
+          <div>
+            <h1 data-i18n="chatbot.title">🤖 AI Doubt Solver</h1>
+            <p data-i18n="chatbot.subtitle">Ask any question about competitive exams, career guidance, or preparation strategies.</p>
+          </div>
+          <button class="action-button secondary" onclick="chatbot.clearChat()" data-i18n="chatbot.clearChat">Clear Chat</button>
+        </div>
+
+        <div class="chatbot-container">
+          <!-- Chat Messages Area -->
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-message bot">
+              <div class="chat-avatar">🤖</div>
+              <div class="chat-bubble">
+                <p data-i18n="chatbot.welcome">Hello! I'm your AI Career Guide. I can help you with:</p>
+                <ul>
+                  <li data-i18n="chatbot.help1">📋 Exam eligibility and syllabus</li>
+                  <li data-i18n="chatbot.help2">📚 Subject-wise preparation tips</li>
+                  <li data-i18n="chatbot.help3">💰 Salary and career growth info</li>
+                  <li data-i18n="chatbot.help4">📅 Application process and dates</li>
+                  <li data-i18n="chatbot.help5">🎯 Personalized study plans</li>
+                </ul>
+                <p data-i18n="chatbot.helpPrompt">What would you like to know today?</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Suggestions -->
+          <div class="chat-suggestions" id="chat-suggestions">
+            <button class="suggestion-chip" onclick="chatbot.sendQuickMessage(this)">What is SSC CGL eligibility?</button>
+            <button class="suggestion-chip" onclick="chatbot.sendQuickMessage(this)">How to prepare for Banking exams?</button>
+            <button class="suggestion-chip" onclick="chatbot.sendQuickMessage(this)">What is the salary of SBI PO?</button>
+            <button class="suggestion-chip" onclick="chatbot.sendQuickMessage(this)">UPSC CSE exam pattern</button>
+            <button class="suggestion-chip" onclick="chatbot.sendQuickMessage(this)">Best books for Quantitative Aptitude</button>
+            <button class="suggestion-chip" onclick="chatbot.sendQuickMessage(this)">Defence exam physical requirements</button>
+          </div>
+
+          <!-- Chat Input -->
+          <div class="chat-input-area">
+            <input
+              type="text"
+              id="chat-input"
+              class="chat-input"
+            placeholder="Type your question here..."
+              data-i18n="chatbot.inputPlaceholder"
+              autocomplete="off"
+            />
+            <button id="chat-send-btn" class="chat-send-btn" onclick="chatbot.sendMessage()">
+              <span>➤</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Panel View -->
+      <section id="admin" class="view">
+        <h1 data-i18n="navigation.adminPanel">Admin Panel</h1>
+        <p data-i18n="admin.subtitle">Manage tests and user assignments.</p>
+
+        <div class="admin-container">
+          <!-- Schedule Test Form -->
+          <div class="admin-section">
+            <h2 data-i18n="admin.scheduleTest">Schedule New Test</h2>
+            <form id="admin-schedule-form" class="admin-form">
+              <div class="form-group">
+                <label for="admin-subject" data-i18n="admin.subject">Subject</label>
+                <select id="admin-subject" required>
+                  <option value="mathematics">Mathematics</option>
+                  <option value="english">English</option>
+                  <option value="logical-reasoning">Logical / Reasoning</option>
+                  <option value="general-knowledge">General Knowledge / Current Affairs</option>
+                  <option value="science-technology">Science and Technology</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="admin-date" data-i18n="admin.date">Date</label>
+                <input type="date" id="admin-date" required />
+              </div>
+
+              <div class="form-group">
+                <label for="admin-time" data-i18n="admin.time">Time</label>
+                <input type="time" id="admin-time" required />
+              </div>
+
+              <div class="form-group">
+                <label for="admin-duration" data-i18n="admin.duration">Duration (minutes)</label>
+                <input type="number" id="admin-duration" min="15" max="300" value="60" required />
+              </div>
+
+              <button type="submit" class="action-button" data-i18n="admin.schedule">Schedule Test</button>
+            </form>
+          </div>
+
+          <!-- Tests List -->
+          <div class="admin-section">
+            <h2 data-i18n="admin.scheduledTests">Scheduled Tests</h2>
+            <div id="admin-tests-list" class="admin-tests-list">
+              <p data-i18n="admin.noTests">No tests scheduled yet.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Load i18n first -->
+  <script src="i18n.js"></script>
+  <!-- Then load main script -->
+  <script src="script.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,22 @@
+{
+  "name": "placement-dashboard",
+  "version": "1.0.0",
+  "description": "Placement Dashboard with Admin and User Login",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["placement", "dashboard", "admin", "user"],
+  "author": "Developer",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "jsonwebtoken": "^9.0.0"
+  },
+  "devDependencies": {}
+}
