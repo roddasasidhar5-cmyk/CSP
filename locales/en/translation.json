@@ -28,6 +28,7 @@
   "navigation": {
     "dashboard": "Dashboard",
     "mockTest": "Mock Test",
+    "customMockTest": "Custom Mock Test",
     "scheduledTest": "Assigned Test",
     "aiInterview": "AI Interview",
     "careerGuidance": "Career Guidance",
@@ -95,6 +96,21 @@
     "retakeTest": "Retake Test",
     "loadMore": "Load More",
     "timeRemaining": "Time Remaining:"
+  },
+  "customMockTest": {
+    "title": "Custom Mock Test",
+    "subtitle": "Paste text to generate a personalized mock test from your own content.",
+    "pasteText": "Paste Text",
+    "enterTextContent": "Enter your text content here...",
+    "generateQuestions": "Generate Questions",
+    "generating": "Generating...",
+    "questionsPreview": "Generated Questions Preview",
+    "startCustomTest": "Start Custom Test",
+    "regenerateQuestions": "Regenerate",
+    "provideContent": "Please paste some text content.",
+    "generationFailed": "Failed to generate questions. Please try again.",
+    "generationError": "Error generating questions. Please check your connection and try again.",
+    "noQuestions": "No questions generated. Please generate questions first."
   },
   "login": {
     "title": "Login",

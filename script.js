@@ -232,6 +232,7 @@ let testState = {
 // ==================== INITIALIZATION ====================
 function initializeApp() {
   setupEventListeners();
+  setupCustomMockTestListeners();
   displayAssignmentStatus();
   if (currentUser.role === 'admin') {
     displayAdminTests();
@@ -909,6 +910,318 @@ function resetSession() {
 
 function loadMoreQuestions() {
   alert(t('common.notImplemented', 'Load more functionality coming soon'));
+}
+
+// ==================== CUSTOM MOCK TEST FUNCTIONALITY ====================
+let customTestState = {
+  generatedQuestions: [],
+  activeQuestions: [],
+  selectedAnswers: [],
+  numQuestions: 0,
+  startTime: null,
+  duration: 0,
+};
+let customTestInProgress = false;
+
+function setupCustomMockTestListeners() {
+  const generateBtn = document.getElementById('generate-custom-test');
+  const startBtn = document.getElementById('start-custom-test-btn');
+  const regenerateBtn = document.getElementById('regenerate-custom-test');
+  const submitBtn = document.getElementById('custom-submit-test');
+
+  if (generateBtn) {
+    generateBtn.addEventListener('click', generateCustomMockTest);
+  }
+  if (startBtn) {
+    startBtn.addEventListener('click', startCustomTest);
+  }
+  if (regenerateBtn) {
+    regenerateBtn.addEventListener('click', generateCustomMockTest);
+  }
+  if (submitBtn) {
+    submitBtn.addEventListener('click', submitCustomTest);
+  }
+}
+
+async function generateCustomMockTest() {
+  const textInput = document.getElementById('custom-text-input');
+  const numQuestionsSelect = document.getElementById('custom-num-questions');
+  const generateBtn = document.getElementById('generate-custom-test');
+
+  if (!textInput || !textInput.value.trim()) {
+    alert(t('customMockTest.provideContent', 'Please paste some text content.'));
+    return;
+  }
+
+  generateBtn.disabled = true;
+  generateBtn.textContent = t('customMockTest.generating', 'Generating...');
+
+  try {
+    const formData = new FormData();
+    formData.append('numQuestions', numQuestionsSelect ? numQuestionsSelect.value : '10');
+    formData.append('text', textInput.value.trim());
+
+    const response = await fetch('/api/custom-mocktest/generate', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      alert(data.message || t('customMockTest.generationFailed', 'Failed to generate questions. Please try again.'));
+      return;
+    }
+
+    customTestState.generatedQuestions = data.questions;
+    displayCustomQuestionsPreview(data.questions);
+
+  } catch (error) {
+    console.error('Custom mock test generation error:', error);
+    alert(t('customMockTest.generationError', 'Error generating questions. Please check your connection and try again.'));
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = t('customMockTest.generateQuestions', 'Generate Questions');
+  }
+}
+
+function displayCustomQuestionsPreview(questions) {
+  const previewContainer = document.getElementById('custom-questions-preview');
+  const questionsList = document.getElementById('custom-questions-list');
+
+  if (!previewContainer || !questionsList) return;
+
+  let html = '';
+  questions.forEach((q, idx) => {
+    html += '<div class="custom-question-preview">' +
+      '<div class="custom-question-number">Q' + (idx + 1) + '</div>' +
+      '<div class="custom-question-text">' + q.question + '</div>' +
+      '<div class="custom-question-options">' +
+      q.options.map(opt => '<span class="custom-option-badge">' + opt + '</span>').join('') +
+      '</div>' +
+      '<div class="custom-question-answer">✓ ' + q.answer + '</div>' +
+      '</div>';
+  });
+
+  questionsList.innerHTML = html;
+  previewContainer.classList.remove('hidden');
+  previewContainer.scrollIntoView({ behavior: 'smooth' });
+}
+
+function startCustomTest() {
+  if (!customTestState.generatedQuestions || customTestState.generatedQuestions.length === 0) {
+    alert(t('customMockTest.noQuestions', 'No questions generated. Please generate questions first.'));
+    return;
+  }
+
+  const numQuestions = customTestState.generatedQuestions.length;
+
+  customTestState.activeQuestions = [...customTestState.generatedQuestions];
+  customTestState.selectedAnswers = new Array(numQuestions).fill(null);
+  customTestState.numQuestions = numQuestions;
+  customTestState.startTime = Date.now();
+  customTestState.duration = numQuestions * 2 * 60;
+  customTestInProgress = true;
+  tabSwitches = 0;
+
+  // Hide preview, show test container
+  document.getElementById('custom-questions-preview').classList.add('hidden');
+  document.getElementById('custom-test-container').classList.remove('hidden');
+  document.getElementById('custom-test-result').classList.add('hidden');
+  document.getElementById('custom-submit-test').classList.remove('hidden');
+
+  document.getElementById('custom-test-title').textContent = t('customMockTest.title', 'Custom Mock Test');
+  document.getElementById('custom-test-description').textContent =
+    t('mockTest.testDescription', 'Answer {num} questions in {min} minutes.')
+      .replace('{num}', numQuestions)
+      .replace('{min}', customTestState.duration / 60);
+
+  displayCustomQuestions();
+  startCustomTimer();
+  enableTestSecurity();
+  document.getElementById('custom-test-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+function displayCustomQuestions() {
+  const form = document.getElementById('custom-test-form');
+  if (!form) return;
+
+  let html = '';
+  customTestState.activeQuestions.forEach((question, idx) => {
+    const difficulty = (question.difficulty || 'Easy').toLowerCase();
+    html += '<div class="question-card" id="custom-qcard-' + idx + '">' +
+      '<div class="question-meta">' +
+      '<span>' + t('mockTest.questionOf', 'Question {current} of {total}').replace('{current}', idx + 1).replace('{total}', customTestState.numQuestions) + '</span>' +
+      '<span class="difficulty-' + difficulty + '">' + (question.difficulty || 'Easy') + '</span>' +
+      '</div>' +
+      '<p>' + (question.question || 'Question text missing') + '</p>' +
+      '<div class="answer-group">' +
+      question.options.map((option) =>
+        '<label><input type="radio" name="custom-answer-' + idx + '" value="' + option + '" ' + (customTestState.selectedAnswers[idx] === option ? 'checked' : '') + ' />' +
+        '<span>' + option + '</span></label>'
+      ).join('') +
+      '</div>' +
+      '<div class="explanation hidden" id="custom-expl-' + idx + '">' +
+      '<p style="margin-bottom:8px"><strong>' + t('mockTest.correctAnswer', 'Correct answer:') + '</strong> ' + (question.answer || 'N/A') + '</p>' +
+      '<p><strong>' + t('mockTest.explanation', 'Explanation:') + '</strong> ' + (question.explanation || '') + '</p>' +
+      '</div>' +
+      '</div>';
+  });
+
+  form.innerHTML = html;
+  updateCustomProgress();
+
+  customTestState.activeQuestions.forEach((_, idx) => {
+    document.querySelectorAll('input[name="custom-answer-' + idx + '"]').forEach(input => {
+      input.addEventListener('change', (e) => {
+        customTestState.selectedAnswers[idx] = e.target.value;
+        updateCustomProgress();
+      });
+    });
+  });
+}
+
+function updateCustomProgress() {
+  const answered = customTestState.selectedAnswers.filter(a => a !== null).length;
+  const filled = customTestState.numQuestions > 0 ? (answered / customTestState.numQuestions) * 100 : 0;
+  const fillEl = document.getElementById('custom-progress-fill');
+  const infoEl = document.getElementById('custom-progress-info');
+  if (fillEl) fillEl.style.width = filled + '%';
+  if (infoEl) infoEl.textContent = t('mockTest.answered', 'Answered {answered} of {total}')
+    .replace('{answered}', answered)
+    .replace('{total}', customTestState.numQuestions);
+}
+
+function startCustomTimer() {
+  if (window.customTestTimerInterval) clearInterval(window.customTestTimerInterval);
+
+  const updateTimerDisplay = () => {
+    const elapsed = Math.floor((Date.now() - customTestState.startTime) / 1000);
+    const remaining = customTestState.duration - elapsed;
+    const timerEl = document.getElementById('custom-timer');
+
+    if (remaining <= 0) {
+      if (timerEl) timerEl.textContent = '00:00';
+      clearInterval(window.customTestTimerInterval);
+      submitCustomTest();
+      return;
+    }
+
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    if (timerEl) timerEl.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+  };
+
+  updateTimerDisplay();
+  window.customTestTimerInterval = setInterval(updateTimerDisplay, 1000);
+}
+
+function submitCustomTest() {
+  customTestInProgress = false;
+  disableTestSecurity();
+  if (window.customTestTimerInterval) clearInterval(window.customTestTimerInterval);
+
+  let correctCount = 0;
+
+  customTestState.selectedAnswers.forEach((answer, idx) => {
+    const question = customTestState.activeQuestions[idx];
+    const isCorrect = answer === question.answer;
+    if (isCorrect) correctCount++;
+
+    const card = document.getElementById('custom-qcard-' + idx);
+    if (card) {
+      card.classList.add(isCorrect ? 'correct' : 'incorrect');
+      const expl = document.getElementById('custom-expl-' + idx);
+      if (expl) expl.classList.remove('hidden');
+
+      card.querySelectorAll('label').forEach(label => {
+        const input = label.querySelector('input');
+        input.disabled = true;
+        if (input.value === question.answer) {
+          label.style.color = '#22c55e';
+          label.style.fontWeight = 'bold';
+        } else if (input.checked && !isCorrect) {
+          label.style.color = '#ef4444';
+          label.style.textDecoration = 'line-through';
+        }
+      });
+    }
+  });
+
+  const rawScore = customTestState.numQuestions > 0 ? (correctCount / customTestState.numQuestions) * 100 : 0;
+  const score = rawScore.toFixed(2);
+  const timeTaken = Math.floor((Date.now() - customTestState.startTime) / 1000);
+
+  const testResultHTML = '<div class="result-score">' + score + '%</div>' +
+    '<div class="result-details">' +
+    '<div class="result-item">' +
+    '<div class="result-item-label">' + t('mockTest.correct', 'Correct') + '</div>' +
+    '<div class="result-item-value">' + correctCount + '/' + customTestState.numQuestions + '</div>' +
+    '</div>' +
+    '<div class="result-item">' +
+    '<div class="result-item-label">' + t('mockTest.timeTaken', 'Time Taken') + '</div>' +
+    '<div class="result-item-value">' + formatTime(timeTaken) + '</div>' +
+    '</div>' +
+    '</div>' +
+    '<button class="action-button" onclick="resetCustomSession()" data-i18n="mockTest.retakeTest">Retake Test</button>';
+
+  const resultEl = document.getElementById('custom-test-result');
+  if (resultEl) {
+    resultEl.innerHTML = testResultHTML;
+    resultEl.classList.remove('hidden');
+  }
+  document.getElementById('custom-submit-test').classList.add('hidden');
+
+  saveTestResult({
+    testId: 'custom-' + Date.now().toString(),
+    userId: currentUser.id || currentUser.email,
+    userName: currentUser.name || currentUser.email,
+    userRole: currentUser.role,
+    subject: 'custom-mock-test',
+    score: parseFloat(score),
+    numQuestions: customTestState.numQuestions,
+    correctCount: correctCount,
+    wrongCount: customTestState.numQuestions - correctCount,
+    timeTaken: timeTaken,
+    date: new Date().toISOString(),
+    startTime: new Date(customTestState.startTime).toISOString(),
+    endTime: new Date().toISOString(),
+    duration: customTestState.duration,
+    questionDetails: customTestState.activeQuestions.map((question, idx) => ({
+      questionNumber: idx + 1,
+      question: question.question,
+      userAnswer: customTestState.selectedAnswers[idx] || 'Not Answered',
+      correctAnswer: question.answer,
+      isCorrect: customTestState.selectedAnswers[idx] === question.answer,
+      options: question.options,
+      difficulty: question.difficulty,
+      explanation: question.explanation,
+    })),
+    browserInfo: {
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toLocaleString(),
+    },
+  });
+}
+
+function resetCustomSession() {
+  customTestInProgress = false;
+  tabSwitches = 0;
+  customTestState = {
+    generatedQuestions: [],
+    activeQuestions: [],
+    selectedAnswers: [],
+    numQuestions: 0,
+    startTime: null,
+    duration: 0,
+  };
+
+  document.getElementById('custom-test-container').classList.add('hidden');
+  document.getElementById('custom-test-form').innerHTML = '';
+  document.getElementById('custom-test-result').classList.add('hidden');
+  document.getElementById('custom-submit-test').classList.add('hidden');
+  document.getElementById('custom-questions-preview').classList.add('hidden');
+  document.getElementById('custom-text-input').value = '';
 }
 
 // ==================== TEST SECURITY ====================

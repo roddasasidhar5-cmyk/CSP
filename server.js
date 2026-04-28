@@ -154,6 +154,52 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Register endpoint
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, name, role = 'user' } = req.body;
+    console.log(`[REGISTER] Attempt: ${email} (${role})`);
+
+    // Validate input
+    if (!email || !password || !name) {
+      return res.status(400).json({ message: 'Email, password, and name are required' });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      console.log(`[REGISTER] Email already registered: ${email}`);
+      return res.status(409).json({ message: 'Email already registered. Please log in.' });
+    }
+
+    // Sanitize role (only allow admin or user)
+    const sanitizedRole = role === 'admin' ? 'admin' : 'user';
+
+    // Create new user
+    const newUser = await User.create({
+      email: email.toLowerCase(),
+      password,
+      name,
+      role: sanitizedRole,
+    });
+
+    console.log(`[REGISTER] Success: ${email} (${sanitizedRole})`);
+
+    res.status(201).json({
+      message: 'Registration successful',
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+      },
+    });
+  } catch (error) {
+    console.error('[REGISTER] Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Verify token middleware
 const verifyToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -320,6 +366,129 @@ app.post('/api/reset-demo', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('[RESET] Error:', error);
     res.status(500).json({ message: 'Reset failed' });
+  }
+});
+
+// ==================== CUSTOM MOCK TEST API ====================
+function generateQuestionsFromText(text, numQuestions = 10) {
+  // Clean and split text into sentences
+  const sentences = text
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 20 && s.length < 300);
+
+  if (sentences.length < 4) {
+    return [];
+  }
+
+  const questions = [];
+  const usedIndices = new Set();
+  const maxQuestions = Math.min(numQuestions, sentences.length);
+
+  // Extract important words (nouns, numbers, capitalized words, key terms)
+  function extractKeyTerms(sentence) {
+    const words = sentence.match(/\b[A-Z][a-z]{2,}\b|\b\d+\b|\b[A-Za-z]{5,}\b/g) || [];
+    return [...new Set(words)].filter(w => w.length > 3);
+  }
+
+  for (let i = 0; i < maxQuestions; i++) {
+    // Pick a sentence that hasn't been used
+    let sentenceIndex;
+    let attempts = 0;
+    do {
+      sentenceIndex = Math.floor(Math.random() * sentences.length);
+      attempts++;
+    } while (usedIndices.has(sentenceIndex) && attempts < 50);
+    
+    if (usedIndices.has(sentenceIndex)) break;
+    usedIndices.add(sentenceIndex);
+
+    const sentence = sentences[sentenceIndex];
+    const keyTerms = extractKeyTerms(sentence);
+
+    if (keyTerms.length === 0) { i--; continue; }
+
+    // Pick a key term as the answer
+    const answerTerm = keyTerms[Math.floor(Math.random() * keyTerms.length)];
+
+    // Create question by blanking out the answer term
+    const questionText = sentence.replace(answerTerm, '__________');
+
+    // Generate distractors from other sentences
+    const distractors = [];
+    const otherTerms = sentences
+      .filter((_, idx) => idx !== sentenceIndex)
+      .flatMap(s => extractKeyTerms(s))
+      .filter(t => t.toLowerCase() !== answerTerm.toLowerCase());
+
+    // Get unique distractors
+    const uniqueDistractors = [...new Set(otherTerms)];
+    
+    while (distractors.length < 3 && uniqueDistractors.length > 0) {
+      const idx = Math.floor(Math.random() * uniqueDistractors.length);
+      const term = uniqueDistractors.splice(idx, 1)[0];
+      if (term && term !== answerTerm) {
+        distractors.push(term);
+      }
+    }
+
+    // If not enough distractors, generate some generic ones
+    while (distractors.length < 3) {
+      distractors.push(`Option ${distractors.length + 1}`);
+    }
+
+    const options = [answerTerm, ...distractors.slice(0, 3)];
+    // Shuffle options
+    for (let j = options.length - 1; j > 0; j--) {
+      const k = Math.floor(Math.random() * (j + 1));
+      [options[j], options[k]] = [options[k], options[j]];
+    }
+
+    questions.push({
+      question: questionText,
+      options: options,
+      answer: answerTerm,
+      difficulty: sentence.length > 150 ? 'Hard' : sentence.length > 80 ? 'Medium' : 'Easy',
+      explanation: `The correct answer is "${answerTerm}" as found in the original text: "${sentence}"`,
+    });
+  }
+
+  return questions;
+}
+
+app.post('/api/custom-mocktest/generate', async (req, res) => {
+  try {
+    let text = '';
+    const numQuestions = parseInt(req.body.numQuestions) || 10;
+
+    if (req.body.text) {
+      text = req.body.text;
+      console.log(`[CUSTOM MOCK TEST] Text received, ${text.length} characters`);
+    } else {
+      return res.status(400).json({ message: 'Please provide text content.' });
+    }
+
+    if (text.trim().length < 50) {
+      return res.status(400).json({ message: 'Content is too short. Please provide at least 50 characters.' });
+    }
+
+    const questions = generateQuestionsFromText(text, numQuestions);
+
+    if (questions.length === 0) {
+      return res.status(400).json({ message: 'Could not generate questions from the provided content. Please try with more detailed text.' });
+    }
+
+    res.json({
+      success: true,
+      questions: questions,
+      totalGenerated: questions.length,
+      sourceLength: text.length,
+    });
+  } catch (error) {
+    console.error('[CUSTOM MOCK TEST] Error:', error);
+    res.status(500).json({ message: 'Failed to generate custom mock test. Please try again.' });
   }
 });
 

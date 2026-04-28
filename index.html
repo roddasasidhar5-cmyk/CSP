@@ -24,6 +24,7 @@
       <nav class="sidebar-nav">
         <button class="nav-item active" data-view="dashboard" data-i18n="navigation.dashboard">Dashboard</button>
         <button class="nav-item" data-view="mock-test" data-i18n="navigation.mockTest">Mock Test</button>
+        <button class="nav-item" data-view="custom-mock-test" data-i18n="navigation.customMockTest">Custom Mock Test</button>
         <button class="nav-item" data-view="schedule-test" data-i18n="navigation.scheduledTest">Assigned Test</button>
         <button class="nav-item" data-view="career-guidance" data-i18n="navigation.careerGuidance">Career Guidance</button>
         <button class="nav-item" data-view="ai-chatbot" data-i18n="navigation.aiChatbot">🤖 AI Doubt Solver</button>
@@ -120,6 +121,10 @@
                 <span class="quick-action-icon">📝</span>
                 <span class="quick-action-label">Start Mock Test</span>
               </button>
+              <button class="quick-action-btn" onclick="navigateToView('custom-mock-test')">
+                <span class="quick-action-icon">📄</span>
+                <span class="quick-action-label">Custom Mock Test</span>
+              </button>
               <button class="quick-action-btn" onclick="navigateToView('career-guidance')">
                 <span class="quick-action-icon">🎯</span>
                 <span class="quick-action-label">Career Guidance</span>
@@ -127,10 +132,6 @@
               <button class="quick-action-btn" onclick="navigateToView('schedule-test')">
                 <span class="quick-action-icon">📅</span>
                 <span class="quick-action-label">Assigned Tests</span>
-              </button>
-              <button class="quick-action-btn" onclick="showTestHistory()">
-                <span class="quick-action-icon">📊</span>
-                <span class="quick-action-label">View History</span>
               </button>
             </div>
           </div>
@@ -210,6 +211,75 @@
           <div class="test-actions">
             <button id="submit-test" class="action-button" data-i18n="mockTest.submitTest">Submit Test</button>
             <button id="load-more" class="action-button secondary hidden" data-i18n="mockTest.loadMore">Load More</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Custom Mock Test View -->
+      <section id="custom-mock-test" class="view">
+        <h1 data-i18n="customMockTest.title">Custom Mock Test</h1>
+        <p data-i18n="customMockTest.subtitle">Paste text to generate a personalized mock test.</p>
+
+        <div class="panel">
+          <div class="custom-mocktest-inputs">
+            <!-- Text Input Area -->
+            <div class="text-input-area">
+              <label for="custom-text-input" data-i18n="customMockTest.pasteText">Paste your text content here:</label>
+              <textarea id="custom-text-input" rows="8" placeholder="Paste any study material, notes, or article text here..."></textarea>
+            </div>
+
+            <!-- Configuration -->
+            <div class="config-row">
+              <label for="custom-num-questions" data-i18n="customMockTest.numQuestions">Number of Questions:</label>
+              <select id="custom-num-questions">
+                <option value="5">5 Questions</option>
+                <option value="10" selected>10 Questions</option>
+                <option value="15">15 Questions</option>
+                <option value="20">20 Questions</option>
+              </select>
+            </div>
+
+            <button id="generate-custom-test" class="action-button" data-i18n="customMockTest.generateQuestions">Generate Questions</button>
+          </div>
+        </div>
+
+        <!-- Generated Questions Preview -->
+        <div id="custom-questions-preview" class="hidden">
+          <div class="panel-header">
+            <h3 data-i18n="customMockTest.previewTitle">Generated Questions Preview</h3>
+          </div>
+          <div id="custom-questions-list" class="custom-questions-list"></div>
+          <div class="preview-actions">
+            <button id="start-custom-test-btn" class="action-button" data-i18n="customMockTest.startTest">Start Custom Test</button>
+            <button id="regenerate-custom-test" class="action-button secondary" data-i18n="customMockTest.regenerate">Regenerate</button>
+          </div>
+        </div>
+
+        <!-- Custom Test Container (reuses test UI) -->
+        <div id="custom-test-container" class="hidden">
+          <div class="test-header">
+            <div class="test-meta">
+              <h2 id="custom-test-title">Custom Mock Test</h2>
+              <p id="custom-test-description">Answer questions based on your uploaded content</p>
+            </div>
+            <div class="test-timer">
+              <span data-i18n="mockTest.timeRemaining">Time Remaining:</span>
+              <span id="custom-timer" class="timer-display">00:00</span>
+            </div>
+          </div>
+
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div id="custom-progress-fill" class="progress-fill"></div>
+            </div>
+            <p id="custom-progress-info" class="progress-info">Answered 0 of 10</p>
+          </div>
+
+          <div id="custom-test-form" class="test-form"></div>
+          <div id="custom-test-result" class="test-result hidden"></div>
+
+          <div class="test-actions">
+            <button id="custom-submit-test" class="action-button" data-i18n="mockTest.submitTest">Submit Test</button>
           </div>
         </div>
       </section>
