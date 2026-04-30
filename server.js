@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -116,16 +117,34 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Verify role matches
+// Verify role matches
     if (user.role !== role) {
       console.log(`[LOGIN] Role mismatch: user.role=${user.role}, requested=${role}`);
       return res.status(401).json({ message: `This account is not registered as ${role}` });
     }
 
-    // Verify password (in production, use bcrypt for comparison)
-    if (user.password !== password) {
-      console.log(`[LOGIN] Password mismatch for ${email}`);
-      return res.status(401).json({ message: 'Invalid email or password' });
+    // Verify password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    // If password doesn't match, also try plain text for legacy users (migration)
+    let needsMigration = false;
+    if (!isPasswordValid) {
+      // Check if it's a legacy plain text password
+      if (user.password === password) {
+        console.log(`[LOGIN] Migrating legacy password for ${email}`);
+        needsMigration = true;
+      } else {
+        console.log(`[LOGIN] Password mismatch for ${email}`);
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+    }
+
+    // Migrate legacy plain text password to bcrypt hash
+    if (needsMigration || (!user.password.startsWith('$2') && !user.password.startsWith('$1'))) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      await User.updateOne({ email: user.email }, { password: hashedPassword });
+      console.log(`[LOGIN] Password migrated to bcrypt for ${email}`);
     }
 
     console.log(`[LOGIN] Success: ${email} (${role})`);
@@ -172,13 +191,17 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(409).json({ message: 'Email already registered. Please log in.' });
     }
 
-    // Sanitize role (only allow admin or user)
+// Sanitize role (only allow admin or user)
     const sanitizedRole = role === 'admin' ? 'admin' : 'user';
+
+    // Hash password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create new user
     const newUser = await User.create({
       email: email.toLowerCase(),
-      password,
+      password: hashedPassword,
       name,
       role: sanitizedRole,
     });
