@@ -166,8 +166,8 @@ registerForm.addEventListener('submit', async (e) => {
 async function handleLogin() {
   const email = document.getElementById('user-email').value;
   const password = document.getElementById('user-password').value;
-  const roleSelect = document.getElementById('user-role');
-  const role = roleSelect ? roleSelect.value : 'user';
+  const role = 'user';
+
 
 // Validate inputs
   if (!email || !password || !role) {
