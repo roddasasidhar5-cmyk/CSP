@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -58,30 +59,28 @@ async function initializeDefaultUsers() {
   try {
     const adminExists = await User.findOne({ email: 'admin@placement.com' });
     if (!adminExists) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
       await User.create({
         email: 'admin@placement.com',
-        password: 'admin123', // In production, use bcrypt
+        password: hashedPassword,
         role: 'admin',
         name: 'Admin User',
       });
-      console.log('✓ Default admin user created');
-    } else {
-      await User.updateOne({ email: 'admin@placement.com' }, { password: 'admin123' });
-      console.log('✓ Admin user password synced');
+      console.log('✓ Default admin user created with bcrypt');
     }
 
     const userExists = await User.findOne({ email: 'user@placement.com' });
     if (!userExists) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('user123', salt);
       await User.create({
         email: 'user@placement.com',
-        password: 'user123', // In production, use bcrypt
+        password: hashedPassword,
         role: 'user',
         name: 'Test User',
       });
-      console.log('✓ Default user created');
-    } else {
-      await User.updateOne({ email: 'user@placement.com' }, { password: 'user123' });
-      console.log('✓ User password synced');
+      console.log('✓ Default user created with bcrypt');
     }
   } catch (error) {
     console.error('Error initializing default users:', error);
@@ -124,28 +123,14 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Verify password using bcrypt
+    // Strict bcrypt-only validation (no plain-text fallback)
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    
-    // If password doesn't match, also try plain text for legacy users (migration)
-    let needsMigration = false;
     if (!isPasswordValid) {
-      // Check if it's a legacy plain text password
-      if (user.password === password) {
-        console.log(`[LOGIN] Migrating legacy password for ${email}`);
-        needsMigration = true;
-      } else {
-        console.log(`[LOGIN] Password mismatch for ${email}`);
-        return res.status(401).json({ message: 'Invalid email or password' });
-      }
+      console.log(`[LOGIN] Password mismatch for ${email}`);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Migrate legacy plain text password to bcrypt hash
-    if (needsMigration || (!user.password.startsWith('$2') && !user.password.startsWith('$1'))) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      await User.updateOne({ email: user.email }, { password: hashedPassword });
-      console.log(`[LOGIN] Password migrated to bcrypt for ${email}`);
-    }
+    console.log(`[LOGIN] Password verified successfully for ${email}`);
 
     console.log(`[LOGIN] Success: ${email} (${role})`);
 
@@ -390,9 +375,24 @@ app.post('/api/reset-demo', verifyToken, async (req, res) => {
     console.error('[RESET] Error:', error);
     res.status(500).json({ message: 'Reset failed' });
   }
-});
+});                                                                                                                                                                                                                                                                                                                                                                                               
 
 // ==================== CUSTOM MOCK TEST API ====================
+
+// Configure multer for text-only uploads (max 10MB)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Only allow text files, reject others
+    if (file.mimetype === 'text/plain' || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only text or PDF files allowed'), false);
+    }
+  }
+});
+
 function generateQuestionsFromText(text, numQuestions = 10) {
   // Clean and split text into sentences
   const sentences = text
@@ -481,26 +481,36 @@ function generateQuestionsFromText(text, numQuestions = 10) {
   return questions;
 }
 
-app.post('/api/custom-mocktest/generate', async (req, res) => {
+app.post('/api/custom-mocktest/generate', upload.none(), async (req, res) => {
   try {
     let text = '';
     const numQuestions = parseInt(req.body.numQuestions) || 10;
 
-    if (req.body.text) {
-      text = req.body.text;
+    if (req.body.text && req.body.text.trim()) {
+      text = req.body.text.trim();
       console.log(`[CUSTOM MOCK TEST] Text received, ${text.length} characters`);
     } else {
-      return res.status(400).json({ message: 'Please provide text content.' });
+      return res.status(400).json({ 
+        message: 'Please provide text content.',
+        received: req.body ? Object.keys(req.body) : 'no body',
+        textLength: req.body?.text?.length || 0
+      });
     }
 
-    if (text.trim().length < 50) {
-      return res.status(400).json({ message: 'Content is too short. Please provide at least 50 characters.' });
+    if (text.length < 50) {
+      return res.status(400).json({ 
+        message: `Content too short (${text.length} chars). Need 50+ chars with multiple sentences.`,
+        receivedChars: text.length
+      });
     }
 
     const questions = generateQuestionsFromText(text, numQuestions);
 
     if (questions.length === 0) {
-      return res.status(400).json({ message: 'Could not generate questions from the provided content. Please try with more detailed text.' });
+      return res.status(400).json({ 
+        message: 'Could not generate questions. Try longer text with varied sentences.',
+        sentencesFound: text.split(/[.!?]+/).length
+      });
     }
 
     res.json({
@@ -508,10 +518,14 @@ app.post('/api/custom-mocktest/generate', async (req, res) => {
       questions: questions,
       totalGenerated: questions.length,
       sourceLength: text.length,
+      sentences: text.split(/[.!?]+/).length
     });
   } catch (error) {
     console.error('[CUSTOM MOCK TEST] Error:', error);
-    res.status(500).json({ message: 'Failed to generate custom mock test. Please try again.' });
+    res.status(500).json({ 
+      message: 'Server error generating mock test.',
+      error: error.message 
+    });
   }
 });
 

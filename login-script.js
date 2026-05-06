@@ -166,11 +166,25 @@ registerForm.addEventListener('submit', async (e) => {
 async function handleLogin() {
   const email = document.getElementById('user-email').value;
   const password = document.getElementById('user-password').value;
-  const role = 'user';
+  const roleSelect = document.getElementById('user-role');
+  const role = roleSelect ? roleSelect.value : 'user';
 
-  // Validate inputs
-  if (!email || !password) {
-    showError(window.i18n.t('messages.invalidInput', 'Please fill in all fields'));
+// Validate inputs
+  if (!email || !password || !role) {
+    showError(window.i18n.t('messages.invalidInput', 'Please fill in all fields including role'));
+    return;
+  }
+
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showError('Please enter a valid email address');
+    return;
+  }
+
+  // Password validation
+  if (password.length < 6) {
+    showError('Password must be at least 6 characters long');
     return;
   }
 

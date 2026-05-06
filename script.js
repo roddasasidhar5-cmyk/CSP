@@ -947,14 +947,23 @@ async function generateCustomMockTest() {
   const textInput = document.getElementById('custom-text-input');
   const numQuestionsSelect = document.getElementById('custom-num-questions');
   const generateBtn = document.getElementById('generate-custom-test');
+  const charCount = document.getElementById('char-count');
 
   if (!textInput || !textInput.value.trim()) {
-    alert(t('customMockTest.provideContent', 'Please paste some text content.'));
+    alert('Please paste some text content (50+ characters recommended).');
     return;
   }
 
+  const textLength = textInput.value.trim().length;
+  if (textLength < 50) {
+    alert(`Text too short: ${textLength} chars. Need 50+ chars with multiple sentences for best results.`);
+    return;
+  }
+
+  if (charCount) charCount.textContent = `${textLength} chars`;
+
   generateBtn.disabled = true;
-  generateBtn.textContent = t('customMockTest.generating', 'Generating...');
+  generateBtn.textContent = 'Generating... (AI processing)';
 
   try {
     const formData = new FormData();
@@ -964,12 +973,14 @@ async function generateCustomMockTest() {
     const response = await fetch('/api/custom-mocktest/generate', {
       method: 'POST',
       body: formData,
+      // NO Content-Type header - browser auto-sets multipart/form-data with boundary
     });
 
     const data = await response.json();
 
-    if (!response.ok || !data.success) {
-      alert(data.message || t('customMockTest.generationFailed', 'Failed to generate questions. Please try again.'));
+  if (!response.ok || !data.success) {
+      console.error('API Error:', data);
+      alert(`Error: ${data.message || 'Failed to generate questions'}\n\nDebug: ${data.received || 'No debug info'}`);
       return;
     }
 
